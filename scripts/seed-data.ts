@@ -137,14 +137,12 @@ async function seedDatabase() {
   console.log("Metro HVAC Services: owner3 / demo123");
 }
 
-// Run if called directly
-if (require.main === module) {
-  seedDatabase()
-    .then(() => process.exit(0))
-    .catch((error) => {
-      console.error("❌ Seed failed:", error);
-      process.exit(1);
-    });
-}
+// Run the seed function
+seedDatabase()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error("❌ Seed failed:", error);
+    process.exit(1);
+  });
 
 export { seedDatabase };
