@@ -112,9 +112,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
-  app.post("/api/customers", async (req, res) => {
+  app.post("/api/customers", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.id;
+      const companyId = await storage.getUserCompanyId(userId);
+      if (!companyId) {
+        return res.status(403).json({ message: "User not associated with any company" });
+      }
+      
       const customerData = insertCustomerSchema.parse(req.body);
+      customerData.companyId = companyId;
       const customer = await storage.createCustomer(customerData);
       res.status(201).json(customer);
     } catch (error) {
@@ -146,14 +153,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Technicians
-  app.get("/api/technicians", async (req, res) => {
-    const technicians = await storage.getTechnicians();
-    res.json(technicians);
+  app.get("/api/technicians", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const companyId = await storage.getUserCompanyId(userId);
+      const technicians = await storage.getTechnicians(companyId || undefined);
+      res.json(technicians);
+    } catch (error) {
+      console.error("Error fetching technicians:", error);
+      res.status(500).json({ message: "Failed to fetch technicians" });
+    }
   });
 
-  app.post("/api/technicians", async (req, res) => {
+  app.post("/api/technicians", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.id;
+      const companyId = await storage.getUserCompanyId(userId);
+      if (!companyId) {
+        return res.status(403).json({ message: "User not associated with any company" });
+      }
+      
       const technicianData = insertTechnicianSchema.parse(req.body);
+      technicianData.companyId = companyId;
       const technician = await storage.createTechnician(technicianData);
       res.status(201).json(technician);
     } catch (error) {
