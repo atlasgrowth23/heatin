@@ -51,13 +51,39 @@ export default function TechnicianForm({ onSuccess }: TechnicianFormProps) {
 
   const createTechnicianMutation = useMutation({
     mutationFn: async (data: InsertTechnician) => {
-      const response = await apiRequest("POST", "/api/technicians", {
-        ...data,
-        specialties,
-      });
-      return response.json();
+      console.log("Making API request with data:", { ...data, specialties });
+      
+      try {
+        const response = await fetch("/api/technicians", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            ...data,
+            specialties,
+          }),
+        });
+
+        console.log("API response status:", response.status);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("API error response:", errorText);
+          throw new Error(`API request failed: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        console.log("API success response:", result);
+        return result;
+      } catch (error) {
+        console.error("API request error:", error);
+        throw error;
+      }
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      console.log("Mutation success:", result);
       queryClient.invalidateQueries({ queryKey: ["/api/technicians"] });
       toast({
         title: "Success",
@@ -68,6 +94,7 @@ export default function TechnicianForm({ onSuccess }: TechnicianFormProps) {
       onSuccess?.();
     },
     onError: (error) => {
+      console.error("Mutation error:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to create technician",
@@ -88,9 +115,16 @@ export default function TechnicianForm({ onSuccess }: TechnicianFormProps) {
   };
 
   const onSubmit = async (data: InsertTechnician) => {
+    console.log("Technician form submitted with data:", data);
+    console.log("Specialties:", specialties);
+    
     setIsSubmitting(true);
     try {
+      console.log("Attempting to create technician...");
       await createTechnicianMutation.mutateAsync(data);
+      console.log("Technician created successfully");
+    } catch (error) {
+      console.error("Error creating technician:", error);
     } finally {
       setIsSubmitting(false);
     }
