@@ -40,23 +40,21 @@ function Router() {
       {isAuthenticated ? (
         <Layout>
           <Switch>
-            <Route path="/:businessSlug/customers/:id" component={CustomerDetail} />
-            <Route path="/:businessSlug/customers" component={Customers} />
-            <Route path="/:businessSlug/scheduling" component={Scheduling} />
-            <Route path="/:businessSlug/service-calls" component={ServiceCalls} />
-            <Route path="/:businessSlug/invoicing" component={Invoicing} />
-            <Route path="/:businessSlug/inventory" component={Inventory} />
-            <Route path="/:businessSlug/technicians" component={Technicians} />
-            <Route path="/:businessSlug/reports" component={Reports} />
-            <Route path="/:businessSlug" component={Dashboard} />
-            <Route path="/" component={BusinessSelection} />
+            <Route path="/customers/:id" component={CustomerDetail} />
+            <Route path="/customers" component={Customers} />
+            <Route path="/scheduling" component={Scheduling} />
+            <Route path="/service-calls" component={ServiceCalls} />
+            <Route path="/invoicing" component={Invoicing} />
+            <Route path="/inventory" component={Inventory} />
+            <Route path="/technicians" component={Technicians} />
+            <Route path="/reports" component={Reports} />
+            <Route path="/" component={Dashboard} />
             <Route component={NotFound} />
           </Switch>
         </Layout>
       ) : (
         <Switch>
-          <Route path="/login" component={Login} />
-          <Route path="/" component={BusinessSelection} />
+          <Route path="/" component={Login} />
           <Route component={NotFound} />
         </Switch>
       )}

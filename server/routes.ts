@@ -145,10 +145,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(204).send();
   });
 
-  // Technicians - temporarily remove company filtering until tenant system is ready  
+  // Technicians - filter by user's company
   app.get("/api/technicians", isAuthenticated, async (req: any, res) => {
     try {
-      const technicians = await storage.getTechnicians();
+      const userId = req.user.id;
+      const companyId = await storage.getUserCompanyId(userId);
+      if (!companyId) {
+        return res.status(403).json({ message: "User not associated with any company" });
+      }
+      
+      const technicians = await storage.getTechnicians(companyId);
       res.json(technicians);
     } catch (error) {
       console.error("Error fetching technicians:", error);
