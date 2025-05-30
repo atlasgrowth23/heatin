@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { 
   insertCustomerSchema, insertTechnicianSchema, insertJobSchema, 
   insertInvoiceSchema, insertInventorySchema, insertEquipmentSchema,
-  companies
+  companies, customers
 } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -137,24 +137,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
-  app.post("/api/customers", isAuthenticated, async (req: any, res) => {
+  app.post("/api/customers", async (req: any, res) => {
     try {
-      const userId = req.user.id;
-      console.log('Creating customer for user:', userId);
+      // Get user from session
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
       const companyId = await storage.getUserCompanyId(userId);
-      console.log('User company ID:', companyId);
       if (!companyId) {
         return res.status(403).json({ message: "User not associated with any company" });
       }
       
-      const customerData = { ...req.body, companyId };
-      console.log('Customer data with company ID:', customerData);
-      const validatedData = insertCustomerSchema.parse(customerData);
-      const customer = await storage.createCustomer(validatedData);
+      // Create customer data with company ID
+      const customerData = {
+        name: req.body.name,
+        email: req.body.email,
+        phone: req.body.phone,
+        address: req.body.address,
+        city: req.body.city || null,
+        state: req.body.state || null,
+        zipCode: req.body.zipCode || null,
+        companyId: companyId
+      };
+      
+      // Insert customer directly into database
+      const [customer] = await db.insert(customers).values(customerData).returning();
       res.status(201).json(customer);
     } catch (error) {
       console.error('Customer creation error:', error);
-      res.status(400).json({ message: "Invalid customer data", error });
+      res.status(400).json({ message: "Failed to create customer", error: error.message });
     }
   });
 
