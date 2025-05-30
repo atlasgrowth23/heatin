@@ -4,15 +4,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, Clock, User, MapPin, Route, Navigation } from "lucide-react";
-import { format, startOfWeek, addDays, isSameDay } from "date-fns";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Calendar, Clock, User, MapPin, Route, Navigation, Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { format, startOfWeek, addDays, isSameDay, startOfDay, addWeeks, subWeeks, isToday } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
+import JobFormNew from "@/components/forms/JobFormNew";
 import type { Job, Customer, Technician } from "@shared/schema";
 
 export default function Scheduling() {
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [selectedTechnician, setSelectedTechnician] = useState<string>("");
+  const [selectedTechnician, setSelectedTechnician] = useState<string>("all");
   const [mapView, setMapView] = useState<"schedule" | "map">("schedule");
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const queryClient = useQueryClient();
@@ -35,11 +38,8 @@ export default function Scheduling() {
   // Route optimization mutation
   const optimizeRoute = useMutation({
     mutationFn: async (data: { technicianId: number; date: string }) => {
-      return await apiRequest({
-        url: "/api/routes/optimize",
-        method: "POST",
-        body: data,
-      });
+      const response = await apiRequest("POST", "/api/routes/optimize", data);
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
@@ -129,8 +129,11 @@ export default function Scheduling() {
     }
   };
 
+
+
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-800">Scheduling & Route Management</h1>
         <div className="flex items-center space-x-4">
@@ -147,6 +150,7 @@ export default function Scheduling() {
               ))}
             </SelectContent>
           </Select>
+          
           <div className="flex border rounded-lg overflow-hidden">
             <Button 
               variant={mapView === "schedule" ? "default" : "outline"}
@@ -165,10 +169,51 @@ export default function Scheduling() {
               Map View
             </Button>
           </div>
-          <Button>
-            Schedule New Job
+          
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Schedule New Job
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Schedule New Service Call</DialogTitle>
+              </DialogHeader>
+              <JobFormNew onSuccess={() => setIsCreateDialogOpen(false)} />
+            </DialogContent>
+          </Dialog>
+        </div>
+      </div>
+
+      {/* Week Navigation */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setSelectedDate(subWeeks(selectedDate, 1))}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <h2 className="text-lg font-semibold">
+            {format(weekStart, "MMM d")} - {format(addDays(weekStart, 6), "MMM d, yyyy")}
+          </h2>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setSelectedDate(addWeeks(selectedDate, 1))}
+          >
+            <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
+        <Button 
+          variant="outline" 
+          onClick={() => setSelectedDate(new Date())}
+        >
+          Today
+        </Button>
       </div>
 
       {/* Date Navigation and Route Optimization */}
