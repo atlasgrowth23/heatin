@@ -20,7 +20,7 @@ interface JobFormProps {
   onSuccess?: () => void;
 }
 
-export default function JobForm({ onSuccess }: JobFormProps) {
+export default function JobForm({ customerId, onSuccess }: JobFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
@@ -72,10 +72,11 @@ export default function JobForm({ onSuccess }: JobFormProps) {
   const onSubmit = async (data: InsertJob) => {
     setIsSubmitting(true);
     try {
-      // Convert date to ISO string for API
+      // Ensure customerId is set if provided via props
       const jobData = {
         ...data,
-        scheduledDate: data.scheduledDate ? data.scheduledDate.toISOString() : null,
+        customerId: customerId || data.customerId,
+        scheduledDate: data.scheduledDate || null,
       };
       await createJobMutation.mutateAsync(jobData);
     } finally {
