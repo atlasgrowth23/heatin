@@ -67,6 +67,14 @@ export interface IStorage {
   updateEquipmentItem(id: number, equipment: Partial<InsertEquipment>): Promise<Equipment | undefined>;
   deleteEquipmentItem(id: number): Promise<boolean>;
   getEquipmentNeedingService(): Promise<Equipment[]>;
+  
+  // Services
+  getServices(): Promise<Service[]>;
+  getService(id: number): Promise<Service | undefined>;
+  getServicesByCategory(category: string): Promise<Service[]>;
+  createService(service: InsertService): Promise<Service>;
+  updateService(id: number, service: Partial<InsertService>): Promise<Service | undefined>;
+  deleteService(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -296,6 +304,43 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(equipment).where(
       lte(equipment.nextServiceDate, today)
     );
+  }
+
+  // Services
+  async getServices(): Promise<Service[]> {
+    return await db.select().from(services).where(eq(services.isActive, true));
+  }
+
+  async getService(id: number): Promise<Service | undefined> {
+    const result = await db.select().from(services).where(eq(services.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getServicesByCategory(category: string): Promise<Service[]> {
+    return await db.select().from(services).where(
+      and(eq(services.category, category), eq(services.isActive, true))
+    );
+  }
+
+  async createService(insertService: InsertService): Promise<Service> {
+    const result = await db.insert(services).values(insertService).returning();
+    return result[0];
+  }
+
+  async updateService(id: number, updateData: Partial<InsertService>): Promise<Service | undefined> {
+    const result = await db.update(services)
+      .set(updateData)
+      .where(eq(services.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteService(id: number): Promise<boolean> {
+    const result = await db.update(services)
+      .set({ isActive: false })
+      .where(eq(services.id, id))
+      .returning();
+    return result.length > 0;
   }
 }
 

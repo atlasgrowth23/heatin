@@ -113,6 +113,19 @@ export const equipment = pgTable("equipment", {
   notes: text("notes"),
 });
 
+export const services = pgTable("services", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  category: text("category").notNull(), // AC Repair, AC Installation, etc.
+  description: text("description"),
+  basePrice: decimal("base_price", { precision: 10, scale: 2 }),
+  estimatedDuration: integer("estimated_duration"), // in minutes
+  equipmentNeeded: text("equipment_needed").array().default([]),
+  partsNeeded: text("parts_needed").array().default([]),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({ id: true });
 export const insertCustomerSchema = createInsertSchema(customers).omit({ id: true, createdAt: true });
@@ -133,6 +146,7 @@ export const insertInvoiceSchema = createInsertSchema(invoices).omit({ id: true,
 export const insertInvoiceItemSchema = createInsertSchema(invoiceItems).omit({ id: true });
 export const insertInventorySchema = createInsertSchema(inventory).omit({ id: true });
 export const insertEquipmentSchema = createInsertSchema(equipment).omit({ id: true });
+export const insertServiceSchema = createInsertSchema(services).omit({ id: true, createdAt: true });
 
 // Types
 export type User = typeof users.$inferSelect;
@@ -143,6 +157,7 @@ export type Invoice = typeof invoices.$inferSelect;
 export type InvoiceItem = typeof invoiceItems.$inferSelect;
 export type Inventory = typeof inventory.$inferSelect;
 export type Equipment = typeof equipment.$inferSelect;
+export type Service = typeof services.$inferSelect;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertCustomer = z.infer<typeof insertCustomerSchema>;
@@ -152,3 +167,4 @@ export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
 export type InsertInvoiceItem = z.infer<typeof insertInvoiceItemSchema>;
 export type InsertInventory = z.infer<typeof insertInventorySchema>;
 export type InsertEquipment = z.infer<typeof insertEquipmentSchema>;
+export type InsertService = z.infer<typeof insertServiceSchema>;
