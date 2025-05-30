@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useTenant } from "@/hooks/useTenant";
+
 
 interface CustomerFormProps {
   onSuccess?: () => void;
@@ -25,7 +25,6 @@ interface CustomerFormProps {
 
 export default function CustomerForm({ onSuccess }: CustomerFormProps) {
   const { toast } = useToast();
-  const { currentBusiness, getApiUrl } = useTenant();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<InsertCustomer>({
@@ -44,11 +43,11 @@ export default function CustomerForm({ onSuccess }: CustomerFormProps) {
 
   const createCustomerMutation = useMutation({
     mutationFn: async (data: InsertCustomer) => {
-      const response = await apiRequest("POST", getApiUrl("/customers"), data);
+      const response = await apiRequest("POST", "/api/customers", data);
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [getApiUrl("/customers")] });
+      queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
       toast({
         title: "Success", 
         description: "Customer created successfully",
@@ -66,20 +65,10 @@ export default function CustomerForm({ onSuccess }: CustomerFormProps) {
   });
 
   const onSubmit = async (data: InsertCustomer) => {
-    if (!currentBusiness?.id) {
-      toast({
-        title: "Error",
-        description: "Please select a business first",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setIsSubmitting(true);
     try {
-      // Add the business ID to the customer data
-      const customerData = { ...data, companyId: currentBusiness.id };
-      await createCustomerMutation.mutateAsync(customerData);
+      // Send the customer data directly - backend will handle company assignment
+      await createCustomerMutation.mutateAsync(data);
     } finally {
       setIsSubmitting(false);
     }
