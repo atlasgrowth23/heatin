@@ -16,6 +16,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { insertJobSchema, type InsertJob, type Customer, type Technician } from "@shared/schema";
 
 interface JobFormProps {
+  customerId?: number;
   onSuccess?: () => void;
 }
 
@@ -71,10 +72,10 @@ export default function JobForm({ onSuccess }: JobFormProps) {
   const onSubmit = async (data: InsertJob) => {
     setIsSubmitting(true);
     try {
-      // Convert string date to Date object if needed
+      // Convert date to ISO string for API
       const jobData = {
         ...data,
-        scheduledDate: data.scheduledDate ? new Date(data.scheduledDate) : null,
+        scheduledDate: data.scheduledDate ? data.scheduledDate.toISOString() : null,
       };
       await createJobMutation.mutateAsync(jobData);
     } finally {

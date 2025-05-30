@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useRoute } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,28 +6,31 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Calendar, Phone, Mail, MapPin, Wrench, FileText, Plus } from "lucide-react";
 import { format } from "date-fns";
+import JobForm from "@/components/forms/JobFormNew";
 import type { Customer, Job, Invoice, Equipment } from "@shared/schema";
 
 export default function CustomerDetail() {
   const [, params] = useRoute("/customers/:id");
   const customerId = parseInt(params?.id || "0");
+  const [isScheduleDialogOpen, setIsScheduleDialogOpen] = useState(false);
 
   const { data: customer, isLoading: customerLoading } = useQuery<Customer>({
     queryKey: ["/api/customers", customerId],
   });
 
   const { data: jobs = [], isLoading: jobsLoading } = useQuery<Job[]>({
-    queryKey: ["/api/jobs/customer", customerId],
+    queryKey: [`/api/jobs/customer/${customerId}`],
   });
 
   const { data: invoices = [], isLoading: invoicesLoading } = useQuery<Invoice[]>({
-    queryKey: ["/api/invoices/customer", customerId],
+    queryKey: [`/api/invoices/customer/${customerId}`],
   });
 
   const { data: equipment = [], isLoading: equipmentLoading } = useQuery<Equipment[]>({
-    queryKey: ["/api/equipment/customer", customerId],
+    queryKey: [`/api/equipment/customer/${customerId}`],
   });
 
   if (customerLoading) {
@@ -78,10 +82,23 @@ export default function CustomerDetail() {
             <FileText className="w-4 h-4 mr-2" />
             Generate Report
           </Button>
-          <Button>
-            <Plus className="w-4 h-4 mr-2" />
-            Schedule Service
-          </Button>
+          <Dialog open={isScheduleDialogOpen} onOpenChange={setIsScheduleDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                Schedule Service
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Schedule Service for {customer.name}</DialogTitle>
+              </DialogHeader>
+              <JobForm 
+                customerId={customerId} 
+                onSuccess={() => setIsScheduleDialogOpen(false)} 
+              />
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
