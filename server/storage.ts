@@ -1,10 +1,10 @@
 import { eq, and, gte, lte } from "drizzle-orm";
 import { db } from "./db";
 import { 
-  users, customers, technicians, jobs, invoices, invoiceItems, inventory, equipment,
+  users, customers, technicians, jobs, invoices, invoiceItems, inventory, equipment, services,
   type User, type Customer, type Technician, type Job, type Invoice, type InvoiceItem, 
-  type Inventory, type Equipment, type InsertUser, type InsertCustomer, type InsertTechnician,
-  type InsertJob, type InsertInvoice, type InsertInvoiceItem, type InsertInventory, type InsertEquipment
+  type Inventory, type Equipment, type Service, type InsertUser, type InsertCustomer, type InsertTechnician,
+  type InsertJob, type InsertInvoice, type InsertInvoiceItem, type InsertInventory, type InsertEquipment, type InsertService
 } from "@shared/schema";
 
 export interface IStorage {
