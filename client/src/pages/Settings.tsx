@@ -93,8 +93,10 @@ export default function Settings() {
     },
   });
 
-  const handleCreateUser = (e: React.FormEvent) => {
+  const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    console.log("Form submitted with data:", newUserData);
     
     if (!newUserData.username || !newUserData.name || !newUserData.password) {
       toast({
@@ -105,7 +107,48 @@ export default function Settings() {
       return;
     }
 
-    createUserMutation.mutate(newUserData);
+    try {
+      console.log("Attempting to create user...");
+      const response = await fetch("/api/users", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(newUserData),
+      });
+
+      console.log("Response status:", response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Error response:", errorText);
+        throw new Error(`Failed to create user: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      console.log("User created successfully:", result);
+      
+      // Refresh the users list
+      queryClient.invalidateQueries({ queryKey: ["/api/users/company"] });
+      
+      toast({
+        title: "Success",
+        description: "User created successfully",
+      });
+
+      // Reset form
+      setNewUserData({ username: "", name: "", email: "", password: "", role: "technician" });
+      setIsAddUserOpen(false);
+      
+    } catch (error) {
+      console.error("Error creating user:", error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to create user",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleDeleteUser = (userId: number, userName: string) => {
