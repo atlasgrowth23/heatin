@@ -6,7 +6,7 @@ import {
   insertInvoiceSchema, insertInventorySchema, insertEquipmentSchema,
   companies, customers, userRoles
 } from "@shared/schema";
-import { db } from "./db";
+import { db, pool } from "./db";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { getSession, isAuthenticated, authenticateUser, getUserById, createUser } from "./auth";
@@ -148,12 +148,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let companyId = 7; // ABC HVAC Services
       if (userId === 56) companyId = 8; // XYZ Climate Solutions
       
-      // Use direct SQL to avoid parameter binding issues
-      const result = await pool.query(`
+      // Use the exact same SQL that works in execute_sql_tool
+      const result = await db.execute(`
         INSERT INTO customers (company_id, name, email, phone, address, created_at)
-        VALUES ($1, $2, $3, $4, $5, NOW())
+        VALUES (${companyId}, '${req.body.name}', '${req.body.email || ''}', '${req.body.phone || ''}', '${req.body.address || ''}', NOW())
         RETURNING *
-      `, [companyId, req.body.name, req.body.email, req.body.phone, req.body.address]);
+      `);
       
       const customer = result.rows[0];
       
