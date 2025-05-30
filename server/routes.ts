@@ -145,19 +145,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get company ID based on user
-      let companyId = 7; // ABC HVAC Services
+      let companyId = 7; // ABC HVAC Services  
       if (userId === 56) companyId = 8; // XYZ Climate Solutions
       
-      // Use the exact same SQL that works in execute_sql_tool
-      const result = await db.execute(`
-        INSERT INTO customers (company_id, name, email, phone, address, created_at)
-        VALUES (${companyId}, '${req.body.name}', '${req.body.email || ''}', '${req.body.phone || ''}', '${req.body.address || ''}', NOW())
-        RETURNING *
-      `);
+      // Create customer without any validation or complex ORM calls
+      const customerData = {
+        company_id: companyId,
+        name: req.body.name,
+        email: req.body.email,
+        phone: req.body.phone,
+        address: req.body.address,
+        created_at: new Date()
+      };
       
-      const customer = result.rows[0];
+      const query = `INSERT INTO customers (company_id, name, email, phone, address, created_at) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`;
+      const values = [companyId, req.body.name, req.body.email, req.body.phone, req.body.address, new Date()];
       
-      res.status(201).json(customer);
+      const result = await pool.query(query, values);
+      res.status(201).json(result.rows[0]);
     } catch (error) {
       console.error('Customer creation error:', error);
       res.status(500).json({ message: "Failed to create customer", error: String(error) });
