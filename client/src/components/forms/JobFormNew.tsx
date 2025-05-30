@@ -25,9 +25,11 @@ export default function JobForm({ customerId, onSuccess }: JobFormProps) {
   const { toast } = useToast();
 
   const form = useForm<InsertJob>({
-    resolver: zodResolver(insertJobSchema),
+    resolver: zodResolver(insertJobSchema.extend({
+      scheduledDate: insertJobSchema.shape.scheduledDate.optional()
+    })),
     defaultValues: {
-      customerId: 0,
+      customerId: customerId || 0,
       title: "",
       status: "scheduled",
       priority: "normal",
@@ -76,8 +78,9 @@ export default function JobForm({ customerId, onSuccess }: JobFormProps) {
       const jobData = {
         ...data,
         customerId: customerId || data.customerId,
-        scheduledDate: data.scheduledDate || null,
+        scheduledDate: data.scheduledDate ? new Date(data.scheduledDate) : null,
       };
+      console.log('Submitting job data:', jobData);
       await createJobMutation.mutateAsync(jobData);
     } finally {
       setIsSubmitting(false);
@@ -101,7 +104,7 @@ export default function JobForm({ customerId, onSuccess }: JobFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {!customerId && (
           <FormField
             control={form.control}
             name="customerId"
@@ -129,32 +132,32 @@ export default function JobForm({ customerId, onSuccess }: JobFormProps) {
               </FormItem>
             )}
           />
+        )}
 
-          <FormField
-            control={form.control}
-            name="title"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Job Type</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value || ""}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select job type" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {jobTypes.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+        <FormField
+          control={form.control}
+          name="title"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Job Type</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value || ""}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select job type" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {jobTypes.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <FormField
@@ -256,7 +259,10 @@ export default function JobForm({ customerId, onSuccess }: JobFormProps) {
                     <Calendar
                       mode="single"
                       selected={field.value ? new Date(field.value) : undefined}
-                      onSelect={(date) => field.onChange(date?.toISOString())}
+                      onSelect={(date) => {
+                        console.log('Calendar selected date:', date, typeof date);
+                        field.onChange(date || null);
+                      }}
                       disabled={(date) =>
                         date < new Date(new Date().setHours(0, 0, 0, 0))
                       }

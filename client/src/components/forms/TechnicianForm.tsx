@@ -149,7 +149,8 @@ export default function TechnicianForm({ onSuccess }: TechnicianFormProps) {
                   <Input 
                     type="email" 
                     placeholder="technician@example.com" 
-                    {...field} 
+                    {...field}
+                    value={field.value || ""}
                   />
                 </FormControl>
                 <FormMessage />
@@ -164,7 +165,7 @@ export default function TechnicianForm({ onSuccess }: TechnicianFormProps) {
               <FormItem>
                 <FormLabel>Phone Number</FormLabel>
                 <FormControl>
-                  <Input placeholder="(555) 123-4567" {...field} />
+                  <Input placeholder="(555) 123-4567" {...field} value={field.value || ""} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -184,6 +185,7 @@ export default function TechnicianForm({ onSuccess }: TechnicianFormProps) {
                   step="0.01"
                   placeholder="25.00" 
                   {...field}
+                  value={field.value || ""}
                   onChange={(e) => field.onChange(e.target.value || undefined)}
                 />
               </FormControl>

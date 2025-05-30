@@ -192,6 +192,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const job = await storage.createJob(jobData);
       res.status(201).json(job);
     } catch (error) {
+      console.error("Job creation error:", error);
       res.status(400).json({ message: "Invalid job data", error });
     }
   });

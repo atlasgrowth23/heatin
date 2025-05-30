@@ -117,7 +117,18 @@ export const equipment = pgTable("equipment", {
 export const insertUserSchema = createInsertSchema(users).omit({ id: true });
 export const insertCustomerSchema = createInsertSchema(customers).omit({ id: true, createdAt: true });
 export const insertTechnicianSchema = createInsertSchema(technicians).omit({ id: true });
-export const insertJobSchema = createInsertSchema(jobs).omit({ id: true, createdAt: true });
+export const insertJobSchema = createInsertSchema(jobs).omit({ id: true, createdAt: true }).extend({
+  scheduledDate: z.union([z.date(), z.string(), z.null()]).optional().transform((val) => {
+    if (!val) return null;
+    if (typeof val === 'string') return new Date(val);
+    return val;
+  }),
+  completedDate: z.union([z.date(), z.string(), z.null()]).optional().transform((val) => {
+    if (!val) return null;
+    if (typeof val === 'string') return new Date(val);
+    return val;
+  })
+});
 export const insertInvoiceSchema = createInsertSchema(invoices).omit({ id: true, createdAt: true });
 export const insertInvoiceItemSchema = createInsertSchema(invoiceItems).omit({ id: true });
 export const insertInventorySchema = createInsertSchema(inventory).omit({ id: true });

@@ -100,7 +100,8 @@ export default function CustomerForm({ onSuccess }: CustomerFormProps) {
                   <Input 
                     type="email" 
                     placeholder="customer@example.com" 
-                    {...field} 
+                    {...field}
+                    value={field.value || ""}
                   />
                 </FormControl>
                 <FormMessage />
@@ -117,7 +118,7 @@ export default function CustomerForm({ onSuccess }: CustomerFormProps) {
               <FormItem>
                 <FormLabel>Phone Number</FormLabel>
                 <FormControl>
-                  <Input placeholder="(555) 123-4567" {...field} />
+                  <Input placeholder="(555) 123-4567" {...field} value={field.value || ""} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -131,7 +132,7 @@ export default function CustomerForm({ onSuccess }: CustomerFormProps) {
               <FormItem>
                 <FormLabel>Address</FormLabel>
                 <FormControl>
-                  <Input placeholder="Street address" {...field} />
+                  <Input placeholder="Street address" {...field} value={field.value || ""} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -147,7 +148,7 @@ export default function CustomerForm({ onSuccess }: CustomerFormProps) {
               <FormItem>
                 <FormLabel>City</FormLabel>
                 <FormControl>
-                  <Input placeholder="City" {...field} />
+                  <Input placeholder="City" {...field} value={field.value || ""} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -161,7 +162,7 @@ export default function CustomerForm({ onSuccess }: CustomerFormProps) {
               <FormItem>
                 <FormLabel>State</FormLabel>
                 <FormControl>
-                  <Input placeholder="State" {...field} />
+                  <Input placeholder="State" {...field} value={field.value || ""} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -175,7 +176,7 @@ export default function CustomerForm({ onSuccess }: CustomerFormProps) {
               <FormItem>
                 <FormLabel>ZIP Code</FormLabel>
                 <FormControl>
-                  <Input placeholder="ZIP" {...field} />
+                  <Input placeholder="ZIP" {...field} value={field.value || ""} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -193,7 +194,8 @@ export default function CustomerForm({ onSuccess }: CustomerFormProps) {
                 <Textarea 
                   placeholder="Additional notes about the customer..."
                   className="min-h-[100px]"
-                  {...field} 
+                  {...field}
+                  value={field.value || ""}
                 />
               </FormControl>
               <FormMessage />

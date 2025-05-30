@@ -1,3 +1,5 @@
+import { eq, and, gte, lte } from "drizzle-orm";
+import { db } from "./db";
 import { 
   users, customers, technicians, jobs, invoices, invoiceItems, inventory, equipment,
   type User, type Customer, type Technician, type Job, type Invoice, type InvoiceItem, 
@@ -67,357 +69,234 @@ export interface IStorage {
   getEquipmentNeedingService(): Promise<Equipment[]>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User> = new Map();
-  private customers: Map<number, Customer> = new Map();
-  private technicians: Map<number, Technician> = new Map();
-  private jobs: Map<number, Job> = new Map();
-  private invoices: Map<number, Invoice> = new Map();
-  private invoiceItems: Map<number, InvoiceItem> = new Map();
-  private inventory: Map<number, Inventory> = new Map();
-  private equipment: Map<number, Equipment> = new Map();
-  
-  private currentUserId = 1;
-  private currentCustomerId = 1;
-  private currentTechnicianId = 1;
-  private currentJobId = 1;
-  private currentInvoiceId = 1;
-  private currentInvoiceItemId = 1;
-  private currentInventoryId = 1;
-  private currentEquipmentId = 1;
-
-  constructor() {
-    this.seedData();
-  }
-
-  private seedData() {
-    // Create default admin user
-    const adminUser: User = {
-      id: this.currentUserId++,
-      username: "admin",
-      password: "admin123",
-      name: "John Davis",
-      email: "admin@hvacpro.com",
-      role: "admin"
-    };
-    this.users.set(adminUser.id, adminUser);
-  }
-
+export class DatabaseStorage implements IStorage {
   // Users
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
+    return result[0];
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(user => user.username === username);
+    const result = await db.select().from(users).where(eq(users.username, username)).limit(1);
+    return result[0];
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const user: User = { ...insertUser, id: this.currentUserId++ };
-    this.users.set(user.id, user);
-    return user;
+    const result = await db.insert(users).values(insertUser).returning();
+    return result[0];
   }
 
   // Customers
   async getCustomers(): Promise<Customer[]> {
-    return Array.from(this.customers.values());
+    return await db.select().from(customers);
   }
 
   async getCustomer(id: number): Promise<Customer | undefined> {
-    return this.customers.get(id);
+    const result = await db.select().from(customers).where(eq(customers.id, id)).limit(1);
+    return result[0];
   }
 
   async createCustomer(insertCustomer: InsertCustomer): Promise<Customer> {
-    const customer: Customer = { 
-      id: this.currentCustomerId++,
-      name: insertCustomer.name,
-      email: insertCustomer.email || null,
-      phone: insertCustomer.phone || null,
-      address: insertCustomer.address || null,
-      city: insertCustomer.city || null,
-      state: insertCustomer.state || null,
-      zipCode: insertCustomer.zipCode || null,
-      notes: insertCustomer.notes || null,
-      createdAt: new Date()
-    };
-    this.customers.set(customer.id, customer);
-    return customer;
+    const result = await db.insert(customers).values(insertCustomer).returning();
+    return result[0];
   }
 
   async updateCustomer(id: number, updateData: Partial<InsertCustomer>): Promise<Customer | undefined> {
-    const customer = this.customers.get(id);
-    if (!customer) return undefined;
-    
-    const updatedCustomer = { ...customer, ...updateData };
-    this.customers.set(id, updatedCustomer);
-    return updatedCustomer;
+    const result = await db.update(customers).set(updateData).where(eq(customers.id, id)).returning();
+    return result[0];
   }
 
   async deleteCustomer(id: number): Promise<boolean> {
-    return this.customers.delete(id);
+    const result = await db.delete(customers).where(eq(customers.id, id));
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Technicians
   async getTechnicians(): Promise<Technician[]> {
-    return Array.from(this.technicians.values());
+    return await db.select().from(technicians);
   }
 
   async getTechnician(id: number): Promise<Technician | undefined> {
-    return this.technicians.get(id);
+    const result = await db.select().from(technicians).where(eq(technicians.id, id)).limit(1);
+    return result[0];
   }
 
   async createTechnician(insertTechnician: InsertTechnician): Promise<Technician> {
-    const technician: Technician = { 
-      id: this.currentTechnicianId++,
-      userId: insertTechnician.userId || null,
-      name: insertTechnician.name,
-      email: insertTechnician.email || null,
-      phone: insertTechnician.phone || null,
-      specialties: insertTechnician.specialties || null,
-      status: insertTechnician.status || "active",
-      hourlyRate: insertTechnician.hourlyRate || null
-    };
-    this.technicians.set(technician.id, technician);
-    return technician;
+    const result = await db.insert(technicians).values(insertTechnician).returning();
+    return result[0];
   }
 
   async updateTechnician(id: number, updateData: Partial<InsertTechnician>): Promise<Technician | undefined> {
-    const technician = this.technicians.get(id);
-    if (!technician) return undefined;
-    
-    const updatedTechnician = { ...technician, ...updateData };
-    this.technicians.set(id, updatedTechnician);
-    return updatedTechnician;
+    const result = await db.update(technicians).set(updateData).where(eq(technicians.id, id)).returning();
+    return result[0];
   }
 
   async deleteTechnician(id: number): Promise<boolean> {
-    return this.technicians.delete(id);
+    const result = await db.delete(technicians).where(eq(technicians.id, id));
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Jobs
   async getJobs(): Promise<Job[]> {
-    return Array.from(this.jobs.values());
+    return await db.select().from(jobs);
   }
 
   async getJob(id: number): Promise<Job | undefined> {
-    return this.jobs.get(id);
+    const result = await db.select().from(jobs).where(eq(jobs.id, id)).limit(1);
+    return result[0];
   }
 
   async getJobsByCustomer(customerId: number): Promise<Job[]> {
-    return Array.from(this.jobs.values()).filter(job => job.customerId === customerId);
+    return await db.select().from(jobs).where(eq(jobs.customerId, customerId));
   }
 
   async getJobsByTechnician(technicianId: number): Promise<Job[]> {
-    return Array.from(this.jobs.values()).filter(job => job.technicianId === technicianId);
+    return await db.select().from(jobs).where(eq(jobs.technicianId, technicianId));
   }
 
   async getTodaysJobs(): Promise<Job[]> {
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
     
-    return Array.from(this.jobs.values()).filter(job => {
-      if (!job.scheduledDate) return false;
-      const scheduledDate = new Date(job.scheduledDate);
-      return scheduledDate >= today && scheduledDate < tomorrow;
-    });
+    return await db.select().from(jobs).where(
+      and(
+        gte(jobs.scheduledDate, startOfDay),
+        lte(jobs.scheduledDate, endOfDay)
+      )
+    );
   }
 
   async createJob(insertJob: InsertJob): Promise<Job> {
-    const job: Job = { 
-      id: this.currentJobId++,
-      customerId: insertJob.customerId,
-      technicianId: insertJob.technicianId || null,
-      title: insertJob.title,
-      description: insertJob.description || null,
-      status: insertJob.status || "scheduled",
-      priority: insertJob.priority || "normal",
-      scheduledDate: insertJob.scheduledDate || null,
-      completedDate: insertJob.completedDate || null,
-      estimatedDuration: insertJob.estimatedDuration || null,
-      actualDuration: insertJob.actualDuration || null,
-      address: insertJob.address || null,
-      notes: insertJob.notes || null,
-      createdAt: new Date()
-    };
-    this.jobs.set(job.id, job);
-    return job;
+    const result = await db.insert(jobs).values(insertJob).returning();
+    return result[0];
   }
 
   async updateJob(id: number, updateData: Partial<InsertJob>): Promise<Job | undefined> {
-    const job = this.jobs.get(id);
-    if (!job) return undefined;
-    
-    const updatedJob = { ...job, ...updateData };
-    this.jobs.set(id, updatedJob);
-    return updatedJob;
+    const result = await db.update(jobs).set(updateData).where(eq(jobs.id, id)).returning();
+    return result[0];
   }
 
   async deleteJob(id: number): Promise<boolean> {
-    return this.jobs.delete(id);
+    const result = await db.delete(jobs).where(eq(jobs.id, id));
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Invoices
   async getInvoices(): Promise<Invoice[]> {
-    return Array.from(this.invoices.values());
+    return await db.select().from(invoices);
   }
 
   async getInvoice(id: number): Promise<Invoice | undefined> {
-    return this.invoices.get(id);
+    const result = await db.select().from(invoices).where(eq(invoices.id, id)).limit(1);
+    return result[0];
   }
 
   async getInvoicesByCustomer(customerId: number): Promise<Invoice[]> {
-    return Array.from(this.invoices.values()).filter(invoice => invoice.customerId === customerId);
+    return await db.select().from(invoices).where(eq(invoices.customerId, customerId));
   }
 
   async createInvoice(insertInvoice: InsertInvoice): Promise<Invoice> {
-    const invoice: Invoice = { 
-      id: this.currentInvoiceId++,
-      customerId: insertInvoice.customerId,
-      jobId: insertInvoice.jobId || null,
-      invoiceNumber: insertInvoice.invoiceNumber,
-      status: insertInvoice.status || "pending",
-      subtotal: insertInvoice.subtotal,
-      tax: insertInvoice.tax || "0.00",
-      total: insertInvoice.total,
-      dueDate: insertInvoice.dueDate || null,
-      paidDate: insertInvoice.paidDate || null,
-      createdAt: new Date()
-    };
-    this.invoices.set(invoice.id, invoice);
-    return invoice;
+    const result = await db.insert(invoices).values(insertInvoice).returning();
+    return result[0];
   }
 
   async updateInvoice(id: number, updateData: Partial<InsertInvoice>): Promise<Invoice | undefined> {
-    const invoice = this.invoices.get(id);
-    if (!invoice) return undefined;
-    
-    const updatedInvoice = { ...invoice, ...updateData };
-    this.invoices.set(id, updatedInvoice);
-    return updatedInvoice;
+    const result = await db.update(invoices).set(updateData).where(eq(invoices.id, id)).returning();
+    return result[0];
   }
 
   async deleteInvoice(id: number): Promise<boolean> {
-    return this.invoices.delete(id);
+    const result = await db.delete(invoices).where(eq(invoices.id, id));
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Invoice Items
   async getInvoiceItems(invoiceId: number): Promise<InvoiceItem[]> {
-    return Array.from(this.invoiceItems.values()).filter(item => item.invoiceId === invoiceId);
+    return await db.select().from(invoiceItems).where(eq(invoiceItems.invoiceId, invoiceId));
   }
 
   async createInvoiceItem(insertItem: InsertInvoiceItem): Promise<InvoiceItem> {
-    const item: InvoiceItem = { ...insertItem, id: this.currentInvoiceItemId++ };
-    this.invoiceItems.set(item.id, item);
-    return item;
+    const result = await db.insert(invoiceItems).values(insertItem).returning();
+    return result[0];
   }
 
   async updateInvoiceItem(id: number, updateData: Partial<InsertInvoiceItem>): Promise<InvoiceItem | undefined> {
-    const item = this.invoiceItems.get(id);
-    if (!item) return undefined;
-    
-    const updatedItem = { ...item, ...updateData };
-    this.invoiceItems.set(id, updatedItem);
-    return updatedItem;
+    const result = await db.update(invoiceItems).set(updateData).where(eq(invoiceItems.id, id)).returning();
+    return result[0];
   }
 
   async deleteInvoiceItem(id: number): Promise<boolean> {
-    return this.invoiceItems.delete(id);
+    const result = await db.delete(invoiceItems).where(eq(invoiceItems.id, id));
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Inventory
   async getInventory(): Promise<Inventory[]> {
-    return Array.from(this.inventory.values());
+    return await db.select().from(inventory);
   }
 
   async getInventoryItem(id: number): Promise<Inventory | undefined> {
-    return this.inventory.get(id);
+    const result = await db.select().from(inventory).where(eq(inventory.id, id)).limit(1);
+    return result[0];
   }
 
   async createInventoryItem(insertItem: InsertInventory): Promise<Inventory> {
-    const item: Inventory = { 
-      id: this.currentInventoryId++,
-      name: insertItem.name,
-      description: insertItem.description || null,
-      sku: insertItem.sku,
-      category: insertItem.category || null,
-      quantity: insertItem.quantity || 0,
-      minQuantity: insertItem.minQuantity || 0,
-      unitPrice: insertItem.unitPrice || null,
-      supplier: insertItem.supplier || null
-    };
-    this.inventory.set(item.id, item);
-    return item;
+    const result = await db.insert(inventory).values(insertItem).returning();
+    return result[0];
   }
 
   async updateInventoryItem(id: number, updateData: Partial<InsertInventory>): Promise<Inventory | undefined> {
-    const item = this.inventory.get(id);
-    if (!item) return undefined;
-    
-    const updatedItem = { ...item, ...updateData };
-    this.inventory.set(id, updatedItem);
-    return updatedItem;
+    const result = await db.update(inventory).set(updateData).where(eq(inventory.id, id)).returning();
+    return result[0];
   }
 
   async deleteInventoryItem(id: number): Promise<boolean> {
-    return this.inventory.delete(id);
+    const result = await db.delete(inventory).where(eq(inventory.id, id));
+    return (result.rowCount ?? 0) > 0;
   }
 
   async getLowStockItems(): Promise<Inventory[]> {
-    return Array.from(this.inventory.values()).filter(item => item.quantity <= item.minQuantity);
+    return await db.select().from(inventory).where(
+      lte(inventory.quantity, inventory.minQuantity)
+    );
   }
 
   // Equipment
   async getEquipment(): Promise<Equipment[]> {
-    return Array.from(this.equipment.values());
+    return await db.select().from(equipment);
   }
 
   async getEquipmentItem(id: number): Promise<Equipment | undefined> {
-    return this.equipment.get(id);
+    const result = await db.select().from(equipment).where(eq(equipment.id, id)).limit(1);
+    return result[0];
   }
 
   async getEquipmentByCustomer(customerId: number): Promise<Equipment[]> {
-    return Array.from(this.equipment.values()).filter(eq => eq.customerId === customerId);
+    return await db.select().from(equipment).where(eq(equipment.customerId, customerId));
   }
 
   async createEquipmentItem(insertEquipment: InsertEquipment): Promise<Equipment> {
-    const equipment: Equipment = { 
-      id: this.currentEquipmentId++,
-      customerId: insertEquipment.customerId,
-      type: insertEquipment.type,
-      brand: insertEquipment.brand || null,
-      model: insertEquipment.model || null,
-      serialNumber: insertEquipment.serialNumber || null,
-      installDate: insertEquipment.installDate || null,
-      lastServiceDate: insertEquipment.lastServiceDate || null,
-      nextServiceDate: insertEquipment.nextServiceDate || null,
-      notes: insertEquipment.notes || null
-    };
-    this.equipment.set(equipment.id, equipment);
-    return equipment;
+    const result = await db.insert(equipment).values(insertEquipment).returning();
+    return result[0];
   }
 
   async updateEquipmentItem(id: number, updateData: Partial<InsertEquipment>): Promise<Equipment | undefined> {
-    const equipment = this.equipment.get(id);
-    if (!equipment) return undefined;
-    
-    const updatedEquipment = { ...equipment, ...updateData };
-    this.equipment.set(id, updatedEquipment);
-    return updatedEquipment;
+    const result = await db.update(equipment).set(updateData).where(eq(equipment.id, id)).returning();
+    return result[0];
   }
 
   async deleteEquipmentItem(id: number): Promise<boolean> {
-    return this.equipment.delete(id);
+    const result = await db.delete(equipment).where(eq(equipment.id, id));
+    return (result.rowCount ?? 0) > 0;
   }
 
   async getEquipmentNeedingService(): Promise<Equipment[]> {
     const today = new Date();
-    return Array.from(this.equipment.values()).filter(eq => {
-      if (!eq.nextServiceDate) return false;
-      return new Date(eq.nextServiceDate) <= today;
-    });
+    return await db.select().from(equipment).where(
+      lte(equipment.nextServiceDate, today)
+    );
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();

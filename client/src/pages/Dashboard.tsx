@@ -10,7 +10,12 @@ import { format } from "date-fns";
 import type { Job, Customer, Technician } from "@shared/schema";
 
 export default function Dashboard() {
-  const { data: stats, isLoading: statsLoading } = useQuery({
+  const { data: stats = {
+    activeJobs: 0,
+    monthlyRevenue: 0,
+    activeTechnicians: 0,
+    customerSatisfaction: 4.8
+  }, isLoading: statsLoading } = useQuery({
     queryKey: ["/api/dashboard/stats"],
   });
 
@@ -71,7 +76,7 @@ export default function Dashboard() {
               <div>
                 <p className="text-sm font-medium text-slate-600">Active Jobs</p>
                 <p className="text-3xl font-bold text-slate-800 mt-1">
-                  {stats?.activeJobs || 0}
+                  {stats.activeJobs || 0}
                 </p>
                 <p className="text-sm text-green-600 mt-1">
                   <span className="inline-flex items-center">
@@ -92,7 +97,7 @@ export default function Dashboard() {
               <div>
                 <p className="text-sm font-medium text-slate-600">Revenue (Month)</p>
                 <p className="text-3xl font-bold text-slate-800 mt-1">
-                  ${stats?.monthlyRevenue?.toLocaleString() || "0"}
+                  ${stats.monthlyRevenue?.toLocaleString() || "0"}
                 </p>
                 <p className="text-sm text-green-600 mt-1">
                   <span className="inline-flex items-center">
