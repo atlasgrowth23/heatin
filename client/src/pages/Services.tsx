@@ -14,7 +14,7 @@ import type { Service } from "@shared/schema";
 export default function Services() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeCategory, setActiveCategory] = useState("hvac");
+  const [activeCategory, setActiveCategory] = useState("services");
   const { toast } = useToast();
 
   const { data: services = [], isLoading } = useQuery<Service[]>({
@@ -24,22 +24,22 @@ export default function Services() {
   // Main catalog sections
   const catalogSections = [
     { 
-      id: "hvac", 
-      name: "HVAC Services", 
-      description: "Air conditioning, heating, and ventilation services",
-      categories: ["AC Repair", "AC Installation", "AC Maintenance", "Heating Repair", "Heating Installation", "Heating Maintenance"]
-    },
-    { 
-      id: "operations", 
-      name: "Business Operations", 
-      description: "Service calls, diagnostics, and operational fees",
-      categories: ["Diagnostic Fees", "Service Calls", "Emergency Services", "Travel Time"]
+      id: "services", 
+      name: "Labor & Services", 
+      description: "Billable services and labor rates",
+      categories: ["Diagnostic", "Repair Labor", "Installation Labor", "Maintenance", "Emergency Service"]
     },
     { 
       id: "parts", 
-      name: "Parts & Materials", 
-      description: "Equipment, parts, and materials catalog",
-      categories: ["Equipment", "Refrigerants", "Filters", "Electrical Components"]
+      name: "Parts & Equipment", 
+      description: "Inventory items and equipment for sale",
+      categories: ["HVAC Units", "Compressors", "Condensers", "Evaporators", "Thermostats", "Filters", "Refrigerants", "Electrical", "Ductwork"]
+    },
+    { 
+      id: "fees", 
+      name: "Service Fees", 
+      description: "Trip charges, diagnostics, and service fees",
+      categories: ["Service Call", "Trip Charge", "After Hours", "Emergency", "Diagnostic Fee"]
     }
   ];
 
@@ -155,12 +155,58 @@ export default function Services() {
 }
 
 function ServiceCard({ service }: { service: Service }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editPrice, setEditPrice] = useState(service.basePrice || "");
+  const [editName, setEditName] = useState(service.name);
+  const { toast } = useToast();
+
+  const updateServiceMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await fetch(`/api/services/${service.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+      if (!response.ok) throw new Error("Failed to update");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/services"] });
+      toast({ title: "Service updated successfully" });
+      setIsEditing(false);
+    },
+    onError: () => {
+      toast({ title: "Failed to update service", variant: "destructive" });
+    }
+  });
+
+  const handleSave = () => {
+    updateServiceMutation.mutate({
+      name: editName,
+      basePrice: editPrice ? parseFloat(editPrice) : null
+    });
+  };
+
+  const handleCancel = () => {
+    setEditPrice(service.basePrice || "");
+    setEditName(service.name);
+    setIsEditing(false);
+  };
+
   return (
     <div className="border border-slate-200 rounded-lg p-4 hover:border-slate-300 transition-colors">
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center space-x-3 mb-2">
-            <h3 className="font-semibold text-slate-800">{service.name}</h3>
+            {isEditing ? (
+              <Input
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                className="font-semibold text-slate-800 border-blue-300"
+              />
+            ) : (
+              <h3 className="font-semibold text-slate-800">{service.name}</h3>
+            )}
             <Badge variant="outline" className="text-xs">
               {service.category}
             </Badge>
@@ -171,13 +217,23 @@ function ServiceCard({ service }: { service: Service }) {
           )}
           
           <div className="flex items-center space-x-4 text-sm text-slate-500">
-            {service.basePrice && (
-              <div className="flex items-center">
-                <DollarSign className="w-4 h-4 mr-1" />
-                ${service.basePrice}
-              </div>
-            )}
-            {service.estimatedDuration && (
+            <div className="flex items-center">
+              <DollarSign className="w-4 h-4 mr-1" />
+              {isEditing ? (
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={editPrice}
+                  onChange={(e) => setEditPrice(e.target.value)}
+                  className="w-20 h-6 text-sm border-blue-300"
+                />
+              ) : (
+                <span className="font-medium text-green-600">
+                  ${service.basePrice || "0.00"}
+                </span>
+              )}
+            </div>
+            {service.estimatedDuration > 0 && (
               <div className="flex items-center">
                 <Clock className="w-4 h-4 mr-1" />
                 {service.estimatedDuration} min
@@ -186,7 +242,7 @@ function ServiceCard({ service }: { service: Service }) {
             {service.equipmentNeeded && service.equipmentNeeded.length > 0 && (
               <div className="flex items-center">
                 <Wrench className="w-4 h-4 mr-1" />
-                {service.equipmentNeeded.length} items
+                {service.equipmentNeeded.length} tools
               </div>
             )}
           </div>
@@ -211,12 +267,25 @@ function ServiceCard({ service }: { service: Service }) {
         </div>
         
         <div className="flex space-x-2">
-          <Button variant="ghost" size="sm">
-            <Edit className="w-4 h-4" />
-          </Button>
-          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
-            <Trash2 className="w-4 h-4" />
-          </Button>
+          {isEditing ? (
+            <>
+              <Button variant="ghost" size="sm" onClick={handleSave} disabled={updateServiceMutation.isPending}>
+                Save
+              </Button>
+              <Button variant="ghost" size="sm" onClick={handleCancel}>
+                Cancel
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>
+                <Edit className="w-4 h-4" />
+              </Button>
+              <Button variant="ghost" size="sm" className="text-slate-400">
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -237,7 +306,7 @@ function ServiceForm({ onSuccess }: { onSuccess?: () => void }) {
 
   const createServiceMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest("/api/services", {
+      const response = await fetch("/api/services", {
         method: "POST",
         body: JSON.stringify({
           ...data,
@@ -248,6 +317,7 @@ function ServiceForm({ onSuccess }: { onSuccess?: () => void }) {
         }),
         headers: { "Content-Type": "application/json" }
       });
+      if (!response.ok) throw new Error("Failed to create service");
       return response.json();
     },
     onSuccess: () => {
