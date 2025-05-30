@@ -17,6 +17,7 @@ import Reports from "@/pages/Reports";
 import Login from "@/pages/Login";
 import Landing from "@/pages/Landing";
 import NotFound from "@/pages/not-found";
+import BusinessSelection from "@/pages/BusinessSelection";
 import { useAuth, AuthProvider } from "@/hooks/useAuth";
 
 function Router() {
