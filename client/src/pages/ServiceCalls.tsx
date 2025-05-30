@@ -15,6 +15,7 @@ export default function ServiceCalls() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const { data: jobs = [], isLoading } = useQuery<Job[]>({
     queryKey: ["/api/jobs"],
@@ -24,19 +25,9 @@ export default function ServiceCalls() {
     queryKey: ["/api/customers"],
   });
 
-  const { data: technicians = [] } = useQuery<Technician[]>({
-    queryKey: ["/api/technicians"],
-  });
-
   const getCustomerName = (customerId: number) => {
     const customer = customers.find(c => c.id === customerId);
     return customer?.name || "Unknown Customer";
-  };
-
-  const getTechnicianName = (technicianId: number | null) => {
-    if (!technicianId) return "Unassigned";
-    const technician = technicians.find(t => t.id === technicianId);
-    return technician?.name || "Unknown";
   };
 
   const filteredJobs = jobs.filter(job => {
@@ -80,9 +71,20 @@ export default function ServiceCalls() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-800">Service Calls</h1>
-        <Button>
-          Create Service Call
-        </Button>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Create Service Call
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Create New Service Call</DialogTitle>
+            </DialogHeader>
+            <ServiceCallForm onSuccess={() => setIsDialogOpen(false)} />
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Filters */}
