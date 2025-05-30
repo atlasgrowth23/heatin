@@ -1,71 +1,93 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { z } from "zod";
+import { useMutation } from "@tanstack/react-query";
+import { insertCustomerSchema } from "@shared/schema";
+import type { InsertCustomer } from "@shared/schema";
 import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { insertCustomerSchema, type Customer } from "@shared/schema";
-import { apiRequest } from "@/lib/queryClient";
 
-const customerFormSchema = insertCustomerSchema.extend({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  email: z.string().email("Invalid email format").optional().or(z.literal("")),
-  phone: z.string().regex(/^[\d\s\-\(\)\+\.]+$/, "Invalid phone number format").optional().or(z.literal("")),
-});
-
-type CustomerFormData = z.infer<typeof customerFormSchema>;
 
 interface CustomerFormProps {
-  customer?: Customer;
-  onClose: () => void;
+  onSuccess?: () => void;
 }
 
-export default function CustomerForm({ customer, onClose }: CustomerFormProps) {
+export default function CustomerForm({ onSuccess }: CustomerFormProps) {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const form = useForm<CustomerFormData>({
-    resolver: zodResolver(customerFormSchema),
+  // Format phone number as user types
+  const formatPhoneNumber = (value: string) => {
+    const cleaned = value.replace(/\D/g, '');
+    const match = cleaned.match(/^(\d{3})(\d{3})(\d{4})$/);
+    if (match) {
+      return `${match[1]}-${match[2]}-${match[3]}`;
+    }
+    return value;
+  };
+
+  const form = useForm<InsertCustomer>({
+    resolver: zodResolver(insertCustomerSchema),
     defaultValues: {
-      firstName: customer?.firstName || "",
-      lastName: customer?.lastName || "",
-      email: customer?.email || "",
-      phone: customer?.phone || "",
-      address: customer?.address || "",
-      city: customer?.city || "",
-      state: customer?.state || "",
-      zipCode: customer?.zipCode || "",
-      membership: customer?.membership || false,
-      notes: customer?.notes || "",
+      name: "",
+      email: "",
+      phone: "",
+      address: "",
+      city: "",
+      state: "",
+      zipCode: "",
+      notes: "",
     },
   });
 
-  const createMutation = useMutation({
-    mutationFn: async (data: CustomerFormData) => {
-      const customerData = {
-        ...data,
-        name: `${data.firstName} ${data.lastName}`, // For backward compatibility
-      };
-      return apiRequest("/api/customers", {
-        method: "POST",
-        body: customerData,
-      });
+  const createCustomerMutation = useMutation({
+    mutationFn: async (data: InsertCustomer) => {
+      // Geocode address if provided
+      let geocodedData = { ...data };
+      if (data.address && data.city && data.state) {
+        try {
+          const fullAddress = `${data.address}, ${data.city}, ${data.state} ${data.zipCode || ''}`;
+          const geocodeResponse = await fetch(`/api/maps/geocode?address=${encodeURIComponent(fullAddress)}`, {
+            credentials: "include",
+          });
+          
+          if (geocodeResponse.ok) {
+            const geocodeResult = await geocodeResponse.json();
+            geocodedData = {
+              ...data,
+              latitude: geocodeResult.latitude,
+              longitude: geocodeResult.longitude,
+            };
+          }
+        } catch (error) {
+          console.log("Geocoding failed, proceeding without coordinates:", error);
+        }
+      }
+
+      const response = await apiRequest("POST", "/api/customers", geocodedData);
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
       toast({
-        title: "Success",
+        title: "Success", 
         description: "Customer created successfully",
       });
-      onClose();
+      form.reset();
+      onSuccess?.();
     },
-    onError: (error: any) => {
+    onError: (error) => {
       toast({
         title: "Error",
         description: error.message || "Failed to create customer",
@@ -74,78 +96,34 @@ export default function CustomerForm({ customer, onClose }: CustomerFormProps) {
     },
   });
 
-  const updateMutation = useMutation({
-    mutationFn: async (data: CustomerFormData) => {
-      const customerData = {
-        ...data,
-        name: `${data.firstName} ${data.lastName}`, // For backward compatibility
-      };
-      return apiRequest(`/api/customers/${customer?.id}`, {
-        method: "PATCH",
-        body: customerData,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/customers", customer?.id] });
-      toast({
-        title: "Success",
-        description: "Customer updated successfully",
-      });
-      onClose();
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update customer",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const onSubmit = (data: CustomerFormData) => {
-    if (customer) {
-      updateMutation.mutate(data);
-    } else {
-      createMutation.mutate(data);
+  const onSubmit = async (data: InsertCustomer) => {
+    setIsSubmitting(true);
+    try {
+      // Send the customer data directly - backend will handle company assignment
+      await createCustomerMutation.mutateAsync(data);
+    } finally {
+      setIsSubmitting(false);
     }
   };
-
-  const isLoading = createMutation.isPending || updateMutation.isPending;
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
-            name="firstName"
+            name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>First Name</FormLabel>
+                <FormLabel>Customer Name *</FormLabel>
                 <FormControl>
-                  <Input placeholder="Enter first name" {...field} />
+                  <Input placeholder="Enter customer name" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-          <FormField
-            control={form.control}
-            name="lastName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Last Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="Enter last name" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
 
-        <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}
             name="email"
@@ -153,20 +131,12 @@ export default function CustomerForm({ customer, onClose }: CustomerFormProps) {
               <FormItem>
                 <FormLabel>Email</FormLabel>
                 <FormControl>
-                  <Input type="email" placeholder="customer@example.com" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="phone"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Phone</FormLabel>
-                <FormControl>
-                  <Input placeholder="(555) 123-4567" {...field} />
+                  <Input 
+                    type="email" 
+                    placeholder="customer@example.com" 
+                    {...field}
+                    value={field.value || ""}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -174,21 +144,45 @@ export default function CustomerForm({ customer, onClose }: CustomerFormProps) {
           />
         </div>
 
-        <FormField
-          control={form.control}
-          name="address"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Service Address</FormLabel>
-              <FormControl>
-                <Input placeholder="123 Main Street" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="phone"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Phone Number</FormLabel>
+                <FormControl>
+                  <Input 
+                    placeholder="555-123-4567" 
+                    {...field}
+                    value={field.value || ""}
+                    onChange={(e) => {
+                      const formatted = formatPhoneNumber(e.target.value);
+                      field.onChange(formatted);
+                    }}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <div className="grid grid-cols-3 gap-4">
+          <FormField
+            control={form.control}
+            name="address"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Address</FormLabel>
+                <FormControl>
+                  <Input placeholder="Street address" {...field} value={field.value || ""} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <FormField
             control={form.control}
             name="city"
@@ -196,12 +190,13 @@ export default function CustomerForm({ customer, onClose }: CustomerFormProps) {
               <FormItem>
                 <FormLabel>City</FormLabel>
                 <FormControl>
-                  <Input placeholder="City" {...field} />
+                  <Input placeholder="City" {...field} value={field.value || ""} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
+
           <FormField
             control={form.control}
             name="state"
@@ -209,47 +204,27 @@ export default function CustomerForm({ customer, onClose }: CustomerFormProps) {
               <FormItem>
                 <FormLabel>State</FormLabel>
                 <FormControl>
-                  <Input placeholder="State" {...field} />
+                  <Input placeholder="State" {...field} value={field.value || ""} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
+
           <FormField
             control={form.control}
             name="zipCode"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Zip Code</FormLabel>
+                <FormLabel>ZIP Code</FormLabel>
                 <FormControl>
-                  <Input placeholder="12345" {...field} />
+                  <Input placeholder="ZIP" {...field} value={field.value || ""} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
         </div>
-
-        <FormField
-          control={form.control}
-          name="membership"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-              <FormControl>
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-              <div className="space-y-1 leading-none">
-                <FormLabel>Membership Customer</FormLabel>
-                <p className="text-sm text-muted-foreground">
-                  Enable special pricing and priority service
-                </p>
-              </div>
-            </FormItem>
-          )}
-        />
 
         <FormField
           control={form.control}
@@ -258,21 +233,34 @@ export default function CustomerForm({ customer, onClose }: CustomerFormProps) {
             <FormItem>
               <FormLabel>Notes</FormLabel>
               <FormControl>
-                <Input placeholder="Additional notes about customer..." {...field} />
+                <Textarea 
+                  placeholder="Additional notes about the customer..."
+                  className="min-h-[100px]"
+                  {...field}
+                  value={field.value || ""}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={onClose}>
-            Cancel
+        <div className="flex justify-end space-x-4">
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={() => form.reset()}
+            disabled={isSubmitting}
+          >
+            Reset
           </Button>
-          <Button type="submit" disabled={isLoading}>
-            {isLoading ? "Saving..." : customer ? "Update Customer" : "Create Customer"}
+          <Button 
+            type="submit" 
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Creating..." : "Create Customer"}
           </Button>
-        </DialogFooter>
+        </div>
       </form>
     </Form>
   );
