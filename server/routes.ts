@@ -3,8 +3,11 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { 
   insertCustomerSchema, insertTechnicianSchema, insertJobSchema, 
-  insertInvoiceSchema, insertInventorySchema, insertEquipmentSchema 
+  insertInvoiceSchema, insertInventorySchema, insertEquipmentSchema,
+  companies
 } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { getSession, isAuthenticated, authenticateUser, getUserById, createUser } from "./auth";
 import { registerTenantRoutes } from "./tenantRoutes";
@@ -61,12 +64,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const companyId = await storage.getUserCompanyId(userId);
       let companyName = null;
       if (companyId) {
-        // Get company details
-        const companies = await storage.getCustomers(); // This will get us access to company data
-        // We need a better way to get company info, but for now let's hardcode
-        if (companyId === 4) companyName = "Quick Fix HVAC";
-        else if (companyId === 5) companyName = "City Climate Control";
-        else if (companyId === 6) companyName = "Metro HVAC Services";
+        // Get actual company name from database using raw SQL
+        try {
+          const result = await storage.db.query('SELECT name FROM companies WHERE id = $1', [companyId]);
+          if (result.rows.length > 0) {
+            companyName = result.rows[0].name;
+          }
+        } catch (error) {
+          console.error('Error fetching company name:', error);
+        }
       }
 
       res.json({ 
