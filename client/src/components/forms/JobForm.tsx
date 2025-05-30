@@ -85,7 +85,12 @@ export default function JobForm({ onSuccess }: JobFormProps) {
   const onSubmit = async (data: InsertJob) => {
     setIsSubmitting(true);
     try {
-      await createJobMutation.mutateAsync(data);
+      // Convert string date to Date object if needed
+      const jobData = {
+        ...data,
+        scheduledDate: data.scheduledDate ? new Date(data.scheduledDate) : null,
+      };
+      await createJobMutation.mutateAsync(jobData);
     } finally {
       setIsSubmitting(false);
     }
