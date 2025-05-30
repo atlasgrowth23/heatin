@@ -327,7 +327,7 @@ export default function JobFormNew({ onSuccess }: JobFormNewProps) {
       </div>
 
       {/* Scheduling */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="space-y-2">
           <Label htmlFor="scheduledDate">Scheduled Date & Time</Label>
           <Input
@@ -336,6 +336,21 @@ export default function JobFormNew({ onSuccess }: JobFormNewProps) {
             value={scheduledDate}
             onChange={(e) => setScheduledDate(e.target.value)}
           />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="priority">Priority</Label>
+          <Select value={priority} onValueChange={setPriority}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="low">Low</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="high">High</SelectItem>
+              <SelectItem value="emergency">Emergency</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="space-y-2">
