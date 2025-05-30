@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Phone, Mail, MapPin, ArrowRight } from "lucide-react";
 import CustomerForm from "@/components/forms/CustomerForm";
 import { queryClient } from "@/lib/queryClient";
+import { formatPhoneNumber } from "@/lib/utils";
 import type { Customer } from "@shared/schema";
 
 export default function Customers() {
@@ -120,32 +121,7 @@ export default function Customers() {
                           </div>
                         </div>
                         
-                        {/* Quick Actions */}
-                        <div className="flex items-center space-x-2">
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              if (customer.phone) window.open(`tel:${customer.phone}`);
-                            }}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <Phone className="w-4 h-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              if (customer.email) window.open(`mailto:${customer.email}`);
-                            }}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <Mail className="w-4 h-4" />
-                          </Button>
-                          <ArrowRight className="w-5 h-5 text-slate-400 group-hover:text-blue-600 transition-colors" />
-                        </div>
+                        <ArrowRight className="w-5 h-5 text-slate-400 group-hover:text-blue-600 transition-colors" />
                       </div>
                     </div>
                   </Link>
