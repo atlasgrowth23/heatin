@@ -31,9 +31,17 @@ export function getSession() {
 }
 
 // Authentication middleware
-export const isAuthenticated: RequestHandler = (req, res, next) => {
+export const isAuthenticated: RequestHandler = async (req, res, next) => {
   if (req.session && (req.session as any).userId) {
-    return next();
+    try {
+      const user = await getUserById((req.session as any).userId);
+      if (user) {
+        (req as any).user = user;
+        return next();
+      }
+    } catch (error) {
+      console.error("Error fetching user in auth middleware:", error);
+    }
   }
   return res.status(401).json({ message: "Unauthorized" });
 };

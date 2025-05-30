@@ -7,6 +7,7 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 import { getSession, isAuthenticated, authenticateUser, getUserById, createUser } from "./auth";
+import { registerTenantRoutes } from "./tenantRoutes";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Session middleware
@@ -69,12 +70,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
   
-  // Customers
+  // Customers - temporarily remove company filtering until tenant system is ready
   app.get("/api/customers", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.id;
-      const companyId = await storage.getUserCompanyId(userId);
-      const customers = await storage.getCustomers(companyId || undefined);
+      const customers = await storage.getCustomers();
       res.json(customers);
     } catch (error) {
       console.error("Error fetching customers:", error);
@@ -114,14 +113,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/customers", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.id;
-      const companyId = await storage.getUserCompanyId(userId);
-      if (!companyId) {
-        return res.status(403).json({ message: "User not associated with any company" });
-      }
-      
       const customerData = insertCustomerSchema.parse(req.body);
-      customerData.companyId = companyId;
+      customerData.companyId = 4; // Default to Quick Fix HVAC for now
       const customer = await storage.createCustomer(customerData);
       res.status(201).json(customer);
     } catch (error) {
@@ -152,12 +145,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(204).send();
   });
 
-  // Technicians
+  // Technicians - temporarily remove company filtering until tenant system is ready  
   app.get("/api/technicians", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.id;
-      const companyId = await storage.getUserCompanyId(userId);
-      const technicians = await storage.getTechnicians(companyId || undefined);
+      const technicians = await storage.getTechnicians();
       res.json(technicians);
     } catch (error) {
       console.error("Error fetching technicians:", error);
