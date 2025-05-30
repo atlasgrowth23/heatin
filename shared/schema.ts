@@ -51,7 +51,9 @@ export const customers = pgTable("customers", {
   id: serial("id").primaryKey(),
   companyId: integer("company_id").references(() => companies.id).notNull(),
   userId: integer("user_id").references(() => users.id),
-  name: text("name").notNull(),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  name: text("name").notNull(), // Keep for backward compatibility
   email: text("email"),
   phone: text("phone"),
   address: text("address"),
@@ -60,6 +62,7 @@ export const customers = pgTable("customers", {
   zipCode: text("zip_code"),
   latitude: decimal("latitude", { precision: 10, scale: 8 }),
   longitude: decimal("longitude", { precision: 11, scale: 8 }),
+  membership: boolean("membership").default(false),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
 });
