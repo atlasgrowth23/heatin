@@ -1,0 +1,133 @@
+table_name,column_name,data_type,is_nullable,default_value,description
+companies,id,serial,NO,nextval(),Primary key
+companies,name,varchar,NO,,Company name (e.g. ABC HVAC Services)
+companies,slug,varchar,NO,,URL-safe company identifier
+companies,address,varchar,YES,,Company street address
+companies,city,varchar,YES,,Company city
+companies,state,varchar,YES,,Company state
+companies,zipCode,varchar,YES,,Company zip code
+companies,phone,varchar,YES,,Company phone number
+companies,email,varchar,YES,,Company email address
+companies,settings,jsonb,YES,,JSON settings (timezone preferences etc)
+companies,createdAt,timestamp,NO,now(),Record creation timestamp
+
+users,id,serial,NO,nextval(),Primary key
+users,username,varchar,NO,,Unique login username
+users,password,varchar,NO,,Bcrypt hashed password
+users,name,varchar,NO,,Full name of user
+users,email,varchar,YES,,User email address
+users,role,varchar,NO,'technician',User role (admin technician dispatcher)
+users,createdAt,timestamp,NO,now(),Record creation timestamp
+
+user_roles,id,serial,NO,nextval(),Primary key
+user_roles,userId,integer,NO,,Foreign key to users table
+user_roles,companyId,integer,NO,,Foreign key to companies table
+user_roles,role,varchar,NO,,Role within the company
+user_roles,createdAt,timestamp,NO,now(),Record creation timestamp
+
+customers,id,serial,NO,nextval(),Primary key
+customers,companyId,integer,NO,,Foreign key to companies table
+customers,userId,integer,YES,,Foreign key to users table
+customers,name,varchar,NO,,Customer full name
+customers,email,varchar,YES,,Customer email address
+customers,phone,varchar,YES,,Customer phone number
+customers,address,varchar,YES,,Customer street address
+customers,city,varchar,YES,,Customer city
+customers,state,varchar,YES,,Customer state
+customers,zipCode,varchar,YES,,Customer zip code
+customers,latitude,decimal(10.8),YES,,GPS latitude coordinate
+customers,longitude,decimal(11.8),YES,,GPS longitude coordinate
+customers,notes,text,YES,,Additional customer notes
+customers,createdAt,timestamp,NO,now(),Record creation timestamp
+
+technicians,id,serial,NO,nextval(),Primary key
+technicians,companyId,integer,NO,,Foreign key to companies table
+technicians,userId,integer,YES,,Foreign key to users table
+technicians,name,varchar,NO,,Technician full name
+technicians,email,varchar,YES,,Technician email address
+technicians,phone,varchar,YES,,Technician phone number
+technicians,specialties,text[],YES,,Array of technician specialties
+technicians,status,varchar,NO,'active',Technician status (active inactive off)
+technicians,hourlyRate,decimal(8.2),YES,,Hourly billing rate
+
+jobs,id,serial,NO,nextval(),Primary key
+jobs,companyId,integer,NO,,Foreign key to companies table
+jobs,customerId,integer,NO,,Foreign key to customers table
+jobs,technicianId,integer,YES,,Foreign key to technicians table
+jobs,title,varchar,NO,,Job title/description
+jobs,description,text,YES,,Detailed job description
+jobs,status,varchar,NO,'scheduled',Job status (scheduled in-progress completed cancelled)
+jobs,priority,varchar,NO,'medium',Job priority (low medium high emergency)
+jobs,scheduledDate,timestamp,YES,,When job is scheduled
+jobs,completedDate,timestamp,YES,,When job was completed
+jobs,estimatedDuration,decimal(4.2),YES,,Estimated hours for job
+jobs,actualDuration,decimal(4.2),YES,,Actual hours spent on job
+jobs,address,varchar,YES,,Job site address if different from customer
+jobs,notes,text,YES,,Additional job notes
+jobs,createdAt,timestamp,NO,now(),Record creation timestamp
+
+invoices,id,serial,NO,nextval(),Primary key
+invoices,companyId,integer,NO,,Foreign key to companies table
+invoices,customerId,integer,NO,,Foreign key to customers table
+invoices,jobId,integer,YES,,Foreign key to jobs table
+invoices,invoiceNumber,varchar,NO,,Unique invoice number
+invoices,status,varchar,NO,'pending',Invoice status (pending paid overdue cancelled)
+invoices,subtotal,decimal(10.2),NO,,Invoice subtotal amount
+invoices,tax,decimal(10.2),NO,0,Tax amount
+invoices,total,decimal(10.2),NO,,Total invoice amount
+invoices,dueDate,date,YES,,Invoice due date
+invoices,paidDate,date,YES,,Date invoice was paid
+invoices,notes,text,YES,,Additional invoice notes
+invoices,createdAt,timestamp,NO,now(),Record creation timestamp
+
+invoice_items,id,serial,NO,nextval(),Primary key
+invoice_items,invoiceId,integer,NO,,Foreign key to invoices table
+invoice_items,description,varchar,NO,,Item description
+invoice_items,quantity,decimal(8.2),NO,1,Item quantity
+invoice_items,unitPrice,decimal(8.2),NO,,Price per unit
+invoice_items,total,decimal(10.2),NO,,Total line item amount
+
+inventory,id,serial,NO,nextval(),Primary key
+inventory,companyId,integer,NO,,Foreign key to companies table
+inventory,name,varchar,NO,,Inventory item name
+inventory,description,text,YES,,Item description
+inventory,sku,varchar,YES,,Stock keeping unit code
+inventory,category,varchar,YES,,Item category
+inventory,quantity,integer,NO,0,Current stock quantity
+inventory,unitPrice,decimal(8.2),YES,,Cost per unit
+inventory,supplier,varchar,YES,,Supplier name
+inventory,reorderLevel,integer,NO,0,Minimum stock level before reorder
+inventory,unit,varchar,YES,,Unit of measurement (each box gallon etc)
+
+equipment,id,serial,NO,nextval(),Primary key
+equipment,companyId,integer,NO,,Foreign key to companies table
+equipment,customerId,integer,NO,,Foreign key to customers table
+equipment,name,varchar,NO,,Equipment name
+equipment,type,varchar,YES,,Equipment type (HVAC Unit Furnace AC Unit etc)
+equipment,brand,varchar,YES,,Equipment brand
+equipment,model,varchar,YES,,Equipment model
+equipment,serialNumber,varchar,YES,,Equipment serial number
+equipment,installDate,date,YES,,Date equipment was installed
+equipment,warrantyExpiry,date,YES,,Warranty expiration date
+equipment,lastServiceDate,date,YES,,Last service date
+equipment,nextServiceDate,date,YES,,Next scheduled service date
+equipment,notes,text,YES,,Additional equipment notes
+
+technician_locations,id,serial,NO,nextval(),Primary key
+technician_locations,technicianId,integer,NO,,Foreign key to technicians table
+technician_locations,latitude,decimal(10.8),NO,,GPS latitude coordinate
+technician_locations,longitude,decimal(11.8),NO,,GPS longitude coordinate
+technician_locations,timestamp,timestamp,NO,now(),Location timestamp
+
+job_routes,id,serial,NO,nextval(),Primary key
+job_routes,technicianId,integer,NO,,Foreign key to technicians table
+job_routes,date,date,NO,,Route date
+job_routes,jobs,integer[],YES,,Array of job IDs in route
+job_routes,optimizedRoute,jsonb,YES,,Optimized route data
+job_routes,totalDistance,decimal(8.2),YES,,Total route distance
+job_routes,estimatedTime,integer,YES,,Estimated time in minutes
+job_routes,createdAt,timestamp,NO,now(),Record creation timestamp
+
+sessions,sid,varchar,NO,,Session ID (primary key)
+sessions,sess,jsonb,NO,,Session data
+sessions,expire,timestamp,NO,,Session expiration time
