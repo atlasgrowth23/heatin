@@ -25,6 +25,7 @@ interface CustomerFormProps {
 
 export default function CustomerForm({ onSuccess }: CustomerFormProps) {
   const { toast } = useToast();
+  const { currentBusiness } = useBusiness();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<InsertCustomer>({
@@ -49,7 +50,7 @@ export default function CustomerForm({ onSuccess }: CustomerFormProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
       toast({
-        title: "Success",
+        title: "Success", 
         description: "Customer created successfully",
       });
       form.reset();
@@ -65,9 +66,20 @@ export default function CustomerForm({ onSuccess }: CustomerFormProps) {
   });
 
   const onSubmit = async (data: InsertCustomer) => {
+    if (!currentBusiness?.id) {
+      toast({
+        title: "Error",
+        description: "Please select a business first",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      await createCustomerMutation.mutateAsync(data);
+      // Add the business ID to the customer data
+      const customerData = { ...data, companyId: currentBusiness.id };
+      await createCustomerMutation.mutateAsync(customerData);
     } finally {
       setIsSubmitting(false);
     }
