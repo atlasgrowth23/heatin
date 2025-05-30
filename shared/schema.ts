@@ -189,6 +189,8 @@ export const insertJobRouteSchema = createInsertSchema(jobRoutes).omit({ id: tru
 
 // Types
 export type User = typeof users.$inferSelect;
+export type Company = typeof companies.$inferSelect;
+export type UserRole = typeof userRoles.$inferSelect;
 export type Customer = typeof customers.$inferSelect;
 export type Technician = typeof technicians.$inferSelect;
 export type Job = typeof jobs.$inferSelect;
@@ -196,9 +198,12 @@ export type Invoice = typeof invoices.$inferSelect;
 export type InvoiceItem = typeof invoiceItems.$inferSelect;
 export type Inventory = typeof inventory.$inferSelect;
 export type Equipment = typeof equipment.$inferSelect;
-export type Service = typeof services.$inferSelect;
+export type TechnicianLocation = typeof technicianLocations.$inferSelect;
+export type JobRoute = typeof jobRoutes.$inferSelect;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type InsertCompany = z.infer<typeof insertCompanySchema>;
+export type InsertUserRole = z.infer<typeof insertUserRoleSchema>;
 export type InsertCustomer = z.infer<typeof insertCustomerSchema>;
 export type InsertTechnician = z.infer<typeof insertTechnicianSchema>;
 export type InsertJob = z.infer<typeof insertJobSchema>;
@@ -206,4 +211,5 @@ export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
 export type InsertInvoiceItem = z.infer<typeof insertInvoiceItemSchema>;
 export type InsertInventory = z.infer<typeof insertInventorySchema>;
 export type InsertEquipment = z.infer<typeof insertEquipmentSchema>;
-export type InsertService = z.infer<typeof insertServiceSchema>;
+export type InsertTechnicianLocation = z.infer<typeof insertTechnicianLocationSchema>;
+export type InsertJobRoute = z.infer<typeof insertJobRouteSchema>;
