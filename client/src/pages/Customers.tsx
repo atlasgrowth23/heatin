@@ -10,18 +10,17 @@ import { Plus, Search, Phone, Mail, MapPin, ArrowRight } from "lucide-react";
 import CustomerForm from "@/components/forms/CustomerForm";
 import { queryClient } from "@/lib/queryClient";
 import { formatPhoneNumber } from "@/lib/utils";
-import { useBusiness } from "@/hooks/useBusiness";
+import { useTenant } from "@/hooks/useTenant";
 import type { Customer } from "@shared/schema";
 
 export default function Customers() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const { currentBusiness } = useBusiness();
+  const { currentBusiness, getApiUrl, isValidTenant } = useTenant();
 
   const { data: customers = [], isLoading } = useQuery<Customer[]>({
-    queryKey: ["/api/customers", currentBusiness?.id],
-    enabled: !!currentBusiness?.id,
-    select: (data) => data.filter(customer => customer.companyId === currentBusiness?.id),
+    queryKey: [getApiUrl("/customers"), currentBusiness?.id],
+    enabled: isValidTenant,
   });
 
   const filteredCustomers = customers.filter(customer => {

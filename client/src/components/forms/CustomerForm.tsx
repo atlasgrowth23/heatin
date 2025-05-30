@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useBusiness } from "@/hooks/useBusiness";
+import { useTenant } from "@/hooks/useTenant";
 
 interface CustomerFormProps {
   onSuccess?: () => void;
@@ -25,7 +25,7 @@ interface CustomerFormProps {
 
 export default function CustomerForm({ onSuccess }: CustomerFormProps) {
   const { toast } = useToast();
-  const { currentBusiness } = useBusiness();
+  const { currentBusiness, getApiUrl } = useTenant();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<InsertCustomer>({
@@ -44,7 +44,7 @@ export default function CustomerForm({ onSuccess }: CustomerFormProps) {
 
   const createCustomerMutation = useMutation({
     mutationFn: async (data: InsertCustomer) => {
-      const response = await apiRequest("POST", "/api/customers", data);
+      const response = await apiRequest("POST", getApiUrl("/customers"), data);
       return response.json();
     },
     onSuccess: () => {

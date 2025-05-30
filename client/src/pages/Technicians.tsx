@@ -7,18 +7,17 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Search, Plus, User, Phone, Mail, HardHat } from "lucide-react";
 import TechnicianForm from "@/components/forms/TechnicianForm";
-import { useBusiness } from "@/hooks/useBusiness";
+import { useTenant } from "@/hooks/useTenant";
 import type { Technician } from "@shared/schema";
 
 export default function Technicians() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const { currentBusiness } = useBusiness();
+  const { currentBusiness, getApiUrl, isValidTenant } = useTenant();
 
   const { data: technicians = [], isLoading } = useQuery<Technician[]>({
-    queryKey: ["/api/technicians", currentBusiness?.id],
-    enabled: !!currentBusiness?.id,
-    select: (data) => data.filter(tech => tech.companyId === currentBusiness?.id),
+    queryKey: [getApiUrl("/technicians"), currentBusiness?.id],
+    enabled: isValidTenant,
   });
 
   const filteredTechnicians = technicians.filter(tech =>
