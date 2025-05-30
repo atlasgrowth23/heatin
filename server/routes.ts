@@ -605,6 +605,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Price Book API routes
+  app.get("/api/pricebook/global", isAuthenticated, async (req, res) => {
+    try {
+      const { category } = req.query;
+      let pricebook;
+      if (category && typeof category === 'string') {
+        pricebook = await storage.getGlobalPricebookByCategory(category);
+      } else {
+        pricebook = await storage.getGlobalPricebook();
+      }
+      res.json(pricebook);
+    } catch (error) {
+      console.error("Error fetching global pricebook:", error);
+      res.status(500).json({ message: "Failed to fetch pricebook" });
+    }
+  });
+
+  app.get("/api/pricebook/company", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const companyId = await storage.getUserCompanyId(userId);
+      if (!companyId) {
+        return res.status(403).json({ message: "User not associated with any company" });
+      }
+
+      const { category } = req.query;
+      let pricebook;
+      if (category && typeof category === 'string') {
+        pricebook = await storage.getCompanyPricebookByCategory(companyId, category);
+      } else {
+        pricebook = await storage.getCompanyPricebook(companyId);
+      }
+
+      // If company pricebook is empty, copy from global
+      if (pricebook.length === 0) {
+        pricebook = await storage.copyGlobalToCompanyPricebook(companyId);
+      }
+
+      res.json(pricebook);
+    } catch (error) {
+      console.error("Error fetching company pricebook:", error);
+      res.status(500).json({ message: "Failed to fetch company pricebook" });
+    }
+  });
+
+  app.post("/api/pricebook/company/copy-global", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const companyId = await storage.getUserCompanyId(userId);
+      if (!companyId) {
+        return res.status(403).json({ message: "User not associated with any company" });
+      }
+
+      const pricebook = await storage.copyGlobalToCompanyPricebook(companyId);
+      res.json({ message: "Global pricebook copied successfully", count: pricebook.length });
+    } catch (error) {
+      console.error("Error copying global pricebook:", error);
+      res.status(500).json({ message: "Failed to copy global pricebook" });
+    }
+  });
+
   // Register tenant-specific routes
   registerTenantRoutes(app);
 

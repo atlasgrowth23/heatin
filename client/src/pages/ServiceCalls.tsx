@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Search, Filter, Clock, User, MapPin, Plus } from "lucide-react";
 import { format } from "date-fns";
-import ServiceCallForm from "@/components/forms/ServiceCallForm";
+import JobFormNew from "@/components/forms/JobFormNew";
 import type { Job, Customer } from "@shared/schema";
 
 export default function ServiceCalls() {
@@ -82,7 +82,7 @@ export default function ServiceCalls() {
             <DialogHeader>
               <DialogTitle>Create New Service Call</DialogTitle>
             </DialogHeader>
-            <ServiceCallForm onSuccess={() => setIsDialogOpen(false)} />
+            <JobFormNew onSuccess={() => setIsDialogOpen(false)} />
           </DialogContent>
         </Dialog>
       </div>

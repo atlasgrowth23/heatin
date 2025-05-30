@@ -351,6 +351,123 @@ export class DatabaseStorage implements IStorage {
     );
   }
 
+  // Price Books - Global
+  async getGlobalPricebook(): Promise<GlobalPricebook[]> {
+    return await db.select().from(globalPricebook).where(eq(globalPricebook.isActive, true));
+  }
+
+  async getGlobalPricebookByCategory(category: string): Promise<GlobalPricebook[]> {
+    return await db.select().from(globalPricebook).where(
+      and(
+        eq(globalPricebook.isActive, true),
+        like(globalPricebook.category, `${category}%`)
+      )
+    );
+  }
+
+  async getGlobalPricebookItem(id: number): Promise<GlobalPricebook | undefined> {
+    const result = await db.select().from(globalPricebook).where(eq(globalPricebook.id, id));
+    return result[0];
+  }
+
+  async createGlobalPricebookItem(insertItem: InsertGlobalPricebook): Promise<GlobalPricebook> {
+    const result = await db.insert(globalPricebook).values(insertItem).returning();
+    return result[0];
+  }
+
+  async updateGlobalPricebookItem(id: number, updateData: Partial<InsertGlobalPricebook>): Promise<GlobalPricebook | undefined> {
+    const result = await db.update(globalPricebook)
+      .set(updateData)
+      .where(eq(globalPricebook.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteGlobalPricebookItem(id: number): Promise<boolean> {
+    const result = await db.delete(globalPricebook).where(eq(globalPricebook.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Price Books - Company
+  async getCompanyPricebook(companyId: number): Promise<CompanyPricebook[]> {
+    return await db.select().from(companyPricebook).where(
+      and(
+        eq(companyPricebook.companyId, companyId),
+        eq(companyPricebook.isActive, true)
+      )
+    );
+  }
+
+  async getCompanyPricebookByCategory(companyId: number, category: string): Promise<CompanyPricebook[]> {
+    return await db.select().from(companyPricebook).where(
+      and(
+        eq(companyPricebook.companyId, companyId),
+        eq(companyPricebook.isActive, true),
+        like(companyPricebook.category, `${category}%`)
+      )
+    );
+  }
+
+  async getCompanyPricebookItem(id: number): Promise<CompanyPricebook | undefined> {
+    const result = await db.select().from(companyPricebook).where(eq(companyPricebook.id, id));
+    return result[0];
+  }
+
+  async createCompanyPricebookItem(insertItem: InsertCompanyPricebook): Promise<CompanyPricebook> {
+    const result = await db.insert(companyPricebook).values(insertItem).returning();
+    return result[0];
+  }
+
+  async updateCompanyPricebookItem(id: number, updateData: Partial<InsertCompanyPricebook>): Promise<CompanyPricebook | undefined> {
+    const result = await db.update(companyPricebook)
+      .set({ ...updateData, updatedAt: new Date() })
+      .where(eq(companyPricebook.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteCompanyPricebookItem(id: number): Promise<boolean> {
+    const result = await db.delete(companyPricebook).where(eq(companyPricebook.id, id));
+    return result.rowCount > 0;
+  }
+
+  async copyGlobalToCompanyPricebook(companyId: number): Promise<CompanyPricebook[]> {
+    // First check if company already has pricebook items
+    const existing = await this.getCompanyPricebook(companyId);
+    if (existing.length > 0) {
+      return existing;
+    }
+
+    // Get all global pricebook items
+    const globalItems = await this.getGlobalPricebook();
+    
+    // Copy to company pricebook
+    const companyItems: InsertCompanyPricebook[] = globalItems.map(item => ({
+      companyId,
+      sku: item.sku,
+      category: item.category,
+      taskName: item.taskName,
+      techNotes: item.techNotes,
+      customerDescription: item.customerDescription,
+      standardPrice: item.standardPrice,
+      membershipPrice: item.membershipPrice,
+      afterHoursPrice: item.afterHoursPrice,
+      estHours: item.estHours,
+      equipmentType: item.equipmentType,
+      partsKit: item.partsKit,
+      warrantyCode: item.warrantyCode,
+      isActive: item.isActive
+    }));
+
+    // Insert all items
+    const results = [];
+    for (const item of companyItems) {
+      const result = await this.createCompanyPricebookItem(item);
+      results.push(result);
+    }
+
+    return results;
+  }
 
 }
 

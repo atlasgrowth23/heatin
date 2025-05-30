@@ -1,318 +1,465 @@
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Badge } from "@/components/ui/badge";
+import { Calendar, Clock, DollarSign, User, Search, Plus, X } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { insertJobSchema, type InsertJob, type Customer, type Technician } from "@shared/schema";
+import type { Customer, GlobalPricebook, CompanyPricebook } from "@shared/schema";
 
-interface JobFormProps {
-  customerId?: number;
+interface JobFormNewProps {
   onSuccess?: () => void;
 }
 
-export default function JobForm({ customerId, onSuccess }: JobFormProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+interface SelectedService {
+  id: number;
+  sku: string;
+  taskName: string;
+  standardPrice: string;
+  membershipPrice?: string;
+  afterHoursPrice?: string;
+  estHours?: string;
+  customerDescription?: string;
+  equipmentType?: string;
+  category: string;
+}
+
+export default function JobFormNew({ onSuccess }: JobFormNewProps) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  // Form state
+  const [customerId, setCustomerId] = useState("");
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [priority, setPriority] = useState("medium");
+  const [scheduledDate, setScheduledDate] = useState("");
+  const [technicianId, setTechnicianId] = useState("");
+  const [selectedServices, setSelectedServices] = useState<SelectedService[]>([]);
+  const [serviceSearch, setServiceSearch] = useState("");
+  const [customerType, setCustomerType] = useState<"standard" | "membership" | "after_hours">("standard");
+  const [showServiceSelector, setShowServiceSelector] = useState(false);
 
-  const form = useForm<InsertJob>({
-    resolver: zodResolver(insertJobSchema.extend({
-      scheduledDate: insertJobSchema.shape.scheduledDate.optional()
-    })),
-    defaultValues: {
-      customerId: customerId || 0,
-      title: "",
-      status: "scheduled",
-      priority: "normal",
-      technicianId: null,
-      scheduledDate: null,
-      estimatedDuration: null,
-    },
-  });
-
+  // Data queries
   const { data: customers = [] } = useQuery<Customer[]>({
     queryKey: ["/api/customers"],
   });
 
-  const { data: technicians = [] } = useQuery<Technician[]>({
+  const { data: technicians = [] } = useQuery({
     queryKey: ["/api/technicians"],
   });
 
+  const { data: pricebook = [] } = useQuery<CompanyPricebook[]>({
+    queryKey: ["/api/pricebook/company"],
+  });
+
+  // Filter services based on search
+  const filteredServices = pricebook.filter(service =>
+    service.taskName.toLowerCase().includes(serviceSearch.toLowerCase()) ||
+    service.category.toLowerCase().includes(serviceSearch.toLowerCase()) ||
+    service.sku.toLowerCase().includes(serviceSearch.toLowerCase())
+  );
+
+  // Group services by category
+  const servicesByCategory = filteredServices.reduce((acc, service) => {
+    const mainCategory = service.category.split(' > ')[0];
+    if (!acc[mainCategory]) acc[mainCategory] = [];
+    acc[mainCategory].push(service);
+    return acc;
+  }, {} as Record<string, CompanyPricebook[]>);
+
+  // Calculate totals
+  const estimatedHours = selectedServices.reduce((total, service) => 
+    total + (parseFloat(service.estHours || "0")), 0
+  );
+
+  const getTotalPrice = () => {
+    return selectedServices.reduce((total, service) => {
+      let price = parseFloat(service.standardPrice);
+      if (customerType === "membership" && service.membershipPrice) {
+        price = parseFloat(service.membershipPrice);
+      } else if (customerType === "after_hours" && service.afterHoursPrice) {
+        price = parseFloat(service.afterHoursPrice);
+      }
+      return total + price;
+    }, 0);
+  };
+
+  const addService = (service: CompanyPricebook) => {
+    const selectedService: SelectedService = {
+      id: service.id,
+      sku: service.sku,
+      taskName: service.taskName,
+      standardPrice: service.standardPrice,
+      membershipPrice: service.membershipPrice || undefined,
+      afterHoursPrice: service.afterHoursPrice || undefined,
+      estHours: service.estHours || undefined,
+      customerDescription: service.customerDescription || undefined,
+      equipmentType: service.equipmentType || undefined,
+      category: service.category
+    };
+    
+    setSelectedServices(prev => [...prev, selectedService]);
+    setServiceSearch("");
+    
+    // Auto-populate title if empty
+    if (!title && selectedServices.length === 0) {
+      setTitle(service.taskName);
+    }
+    
+    // Auto-populate description
+    if (service.customerDescription && !description) {
+      setDescription(service.customerDescription);
+    }
+  };
+
+  const removeService = (index: number) => {
+    setSelectedServices(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const getServicePrice = (service: SelectedService) => {
+    if (customerType === "membership" && service.membershipPrice) {
+      return parseFloat(service.membershipPrice);
+    } else if (customerType === "after_hours" && service.afterHoursPrice) {
+      return parseFloat(service.afterHoursPrice);
+    }
+    return parseFloat(service.standardPrice);
+  };
+
   const createJobMutation = useMutation({
-    mutationFn: async (data: InsertJob) => {
-      const response = await apiRequest("POST", "/api/jobs", data);
-      return response.json();
+    mutationFn: async (jobData: any) => {
+      const response = await apiRequest("/api/jobs", {
+        method: "POST",
+        body: JSON.stringify(jobData),
+      });
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
       queryClient.invalidateQueries({ queryKey: ["/api/jobs/today"] });
       toast({
         title: "Success",
-        description: "Job created successfully",
+        description: "Service call created successfully",
       });
-      form.reset();
+      resetForm();
       onSuccess?.();
     },
     onError: (error) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to create job",
+        description: "Failed to create service call",
         variant: "destructive",
       });
     },
   });
 
-  const onSubmit = async (data: InsertJob) => {
-    setIsSubmitting(true);
-    try {
-      // Ensure customerId is set if provided via props
-      const jobData = {
-        ...data,
-        customerId: customerId || data.customerId,
-        scheduledDate: data.scheduledDate ? new Date(data.scheduledDate) : null,
-      };
-      console.log('Submitting job data:', jobData);
-      await createJobMutation.mutateAsync(jobData);
-    } finally {
-      setIsSubmitting(false);
-    }
+  const resetForm = () => {
+    setCustomerId("");
+    setTitle("");
+    setDescription("");
+    setPriority("medium");
+    setScheduledDate("");
+    setTechnicianId("");
+    setSelectedServices([]);
+    setServiceSearch("");
+    setCustomerType("standard");
+    setShowServiceSelector(false);
   };
 
-  const jobTypes = [
-    "AC Repair",
-    "AC Installation", 
-    "AC Maintenance",
-    "Heating Repair",
-    "Heating Installation",
-    "Heating Maintenance",
-    "Duct Cleaning",
-    "Thermostat Installation",
-    "Emergency Service",
-    "System Inspection",
-    "Other"
-  ];
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!customerId || selectedServices.length === 0) {
+      toast({
+        title: "Error",
+        description: "Please select a customer and at least one service",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const servicesList = selectedServices.map(service => ({
+      sku: service.sku,
+      taskName: service.taskName,
+      price: getServicePrice(service),
+      hours: parseFloat(service.estHours || "0")
+    }));
+
+    const jobData = {
+      customerId: parseInt(customerId),
+      technicianId: technicianId ? parseInt(technicianId) : undefined,
+      title: title || selectedServices.map(s => s.taskName).join(", "),
+      description: description || selectedServices.map(s => s.customerDescription).filter(Boolean).join(". "),
+      status: "scheduled",
+      priority,
+      scheduledDate: scheduledDate ? new Date(scheduledDate).toISOString() : undefined,
+      estimatedDuration: Math.round(estimatedHours * 60), // Convert to minutes
+      notes: `Services: ${servicesList.map(s => `${s.sku} - ${s.taskName} ($${s.price})`).join("; ")}. Total: $${getTotalPrice().toFixed(2)}`
+    };
+
+    createJobMutation.mutate(jobData);
+  };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        {!customerId && (
-          <FormField
-            control={form.control}
-            name="customerId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Customer</FormLabel>
-                <Select 
-                  onValueChange={(value) => field.onChange(parseInt(value))} 
-                  value={field.value?.toString() || ""}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select customer" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {customers.map((customer) => (
-                      <SelectItem key={customer.id} value={customer.id.toString()}>
-                        {customer.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        )}
-
-        <FormField
-          control={form.control}
-          name="title"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Job Type</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || ""}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select job type" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {jobTypes.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <FormField
-            control={form.control}
-            name="status"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Status</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value || "scheduled"}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="scheduled">Scheduled</SelectItem>
-                    <SelectItem value="in_progress">In Progress</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="priority"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Priority</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value || "normal"}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select priority" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="low">Low</SelectItem>
-                    <SelectItem value="normal">Normal</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                    <SelectItem value="urgent">Urgent</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="estimatedDuration"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Duration (mins)</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="number" 
-                    placeholder="120" 
-                    {...field}
-                    value={field.value || ""}
-                    onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Customer and Basic Info */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="customer">Customer *</Label>
+          <Select value={customerId} onValueChange={setCustomerId}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select customer" />
+            </SelectTrigger>
+            <SelectContent>
+              {customers.map((customer) => (
+                <SelectItem key={customer.id} value={customer.id.toString()}>
+                  {customer.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="scheduledDate"
-            render={({ field }) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>Scheduled Date</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "w-full pl-3 text-left font-normal",
-                          !field.value && "text-muted-foreground"
-                        )}
+        <div className="space-y-2">
+          <Label htmlFor="technician">Assign Technician</Label>
+          <Select value={technicianId} onValueChange={setTechnicianId}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select technician (optional)" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">Unassigned</SelectItem>
+              {technicians.map((tech: any) => (
+                <SelectItem key={tech.id} value={tech.id.toString()}>
+                  {tech.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Customer Type and Pricing */}
+      <div className="space-y-2">
+        <Label>Customer Type & Pricing</Label>
+        <div className="flex space-x-4">
+          <Button
+            type="button"
+            variant={customerType === "standard" ? "default" : "outline"}
+            onClick={() => setCustomerType("standard")}
+            className="flex-1"
+          >
+            Standard Pricing
+          </Button>
+          <Button
+            type="button"
+            variant={customerType === "membership" ? "default" : "outline"}
+            onClick={() => setCustomerType("membership")}
+            className="flex-1"
+          >
+            Membership Pricing
+          </Button>
+          <Button
+            type="button"
+            variant={customerType === "after_hours" ? "default" : "outline"}
+            onClick={() => setCustomerType("after_hours")}
+            className="flex-1"
+          >
+            After Hours
+          </Button>
+        </div>
+      </div>
+
+      {/* Service Selection */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">Services</CardTitle>
+            <Button
+              type="button"
+              onClick={() => setShowServiceSelector(!showServiceSelector)}
+              variant="outline"
+              size="sm"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add Service
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Service Selector */}
+          {showServiceSelector && (
+            <div className="border rounded-lg p-4 space-y-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                <Input
+                  placeholder="Search services by name, category, or SKU..."
+                  value={serviceSearch}
+                  onChange={(e) => setServiceSearch(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              
+              {Object.entries(servicesByCategory).map(([category, services]) => (
+                <div key={category}>
+                  <h4 className="font-medium text-slate-700 mb-2">{category}</h4>
+                  <div className="grid grid-cols-1 gap-2">
+                    {services.map((service) => (
+                      <div
+                        key={service.id}
+                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-slate-50 cursor-pointer"
+                        onClick={() => addService(service)}
                       >
-                        {field.value ? (
-                          format(new Date(field.value), "PPP")
-                        ) : (
-                          <span>Pick a date</span>
-                        )}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={field.value ? new Date(field.value) : undefined}
-                      onSelect={(date) => {
-                        console.log('Calendar selected date:', date, typeof date);
-                        field.onChange(date || null);
-                      }}
-                      disabled={(date) =>
-                        date < new Date(new Date().setHours(0, 0, 0, 0))
-                      }
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="technicianId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Technician</FormLabel>
-                <Select 
-                  onValueChange={(value) => field.onChange(value === "unassigned" ? null : parseInt(value))} 
-                  value={field.value?.toString() || "unassigned"}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select technician" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="unassigned">Unassigned</SelectItem>
-                    {technicians.filter(tech => tech.status === "active").map((technician) => (
-                      <SelectItem key={technician.id} value={technician.id.toString()}>
-                        {technician.name}
-                      </SelectItem>
+                        <div className="flex-1">
+                          <div className="font-medium">{service.taskName}</div>
+                          <div className="text-sm text-slate-500">
+                            {service.sku} • {service.category}
+                          </div>
+                          {service.customerDescription && (
+                            <div className="text-xs text-slate-400 mt-1">
+                              {service.customerDescription}
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <div className="font-medium">
+                            ${customerType === "membership" && service.membershipPrice
+                              ? service.membershipPrice
+                              : customerType === "after_hours" && service.afterHoursPrice
+                              ? service.afterHoursPrice
+                              : service.standardPrice}
+                          </div>
+                          {service.estHours && (
+                            <div className="text-sm text-slate-500">
+                              {service.estHours}h
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Selected Services */}
+          {selectedServices.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="font-medium">Selected Services</h4>
+              {selectedServices.map((service, index) => (
+                <div key={index} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                  <div className="flex-1">
+                    <div className="font-medium">{service.taskName}</div>
+                    <div className="text-sm text-slate-600">{service.sku}</div>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    <div className="text-right">
+                      <div className="font-medium">${getServicePrice(service).toFixed(2)}</div>
+                      {service.estHours && (
+                        <div className="text-sm text-slate-500">{service.estHours}h</div>
+                      )}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeService(index)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              
+              {/* Totals */}
+              <div className="border-t pt-3 mt-3">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center space-x-4">
+                    <div className="flex items-center text-sm text-slate-600">
+                      <Clock className="mr-1 h-4 w-4" />
+                      {estimatedHours.toFixed(1)}h estimated
+                    </div>
+                    <Badge variant="secondary">
+                      {selectedServices.length} service{selectedServices.length !== 1 ? 's' : ''}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center text-lg font-semibold">
+                    <DollarSign className="mr-1 h-5 w-5" />
+                    {getTotalPrice().toFixed(2)}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Scheduling and Details */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="scheduledDate">Scheduled Date & Time</Label>
+          <Input
+            id="scheduledDate"
+            type="datetime-local"
+            value={scheduledDate}
+            onChange={(e) => setScheduledDate(e.target.value)}
           />
         </div>
 
+        <div className="space-y-2">
+          <Label htmlFor="priority">Priority</Label>
+          <Select value={priority} onValueChange={setPriority}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="low">Low</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="high">High</SelectItem>
+              <SelectItem value="emergency">Emergency</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="title">Service Call Title</Label>
+        <Input
+          id="title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Auto-populated from selected services"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="description">Description & Notes</Label>
+        <Textarea
+          id="description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Additional details, customer requests, special instructions..."
+          rows={3}
+        />
+      </div>
+
+      {/* Submit */}
+      <div className="flex justify-end space-x-4">
+        <Button type="button" variant="outline" onClick={resetForm}>
+          Reset
+        </Button>
         <Button 
           type="submit" 
-          className="w-full" 
-          disabled={isSubmitting}
+          disabled={createJobMutation.isPending || !customerId || selectedServices.length === 0}
         >
-          {isSubmitting ? "Creating..." : "Create Job"}
+          {createJobMutation.isPending ? "Creating..." : "Create Service Call"}
         </Button>
-      </form>
-    </Form>
+      </div>
+    </form>
   );
 }
