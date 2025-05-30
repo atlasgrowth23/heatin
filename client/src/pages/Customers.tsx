@@ -18,15 +18,14 @@ export default function Customers() {
   const [searchTerm, setSearchTerm] = useState("");
   const { currentBusiness, getApiUrl, isValidTenant } = useTenant();
 
-  const { data: customers = [], isLoading } = useQuery<Customer[]>({
-    queryKey: [getApiUrl("/customers"), currentBusiness?.id],
-    enabled: isValidTenant,
-    queryFn: async () => {
-      const response = await fetch(getApiUrl("/customers"), { credentials: "include" });
-      if (!response.ok) throw new Error("Failed to fetch customers");
-      return response.json();
-    },
+  const { data: allCustomers = [], isLoading } = useQuery<Customer[]>({
+    queryKey: ["/api/customers"],
   });
+
+  // Filter customers by current business
+  const customers = currentBusiness 
+    ? allCustomers.filter(customer => customer.companyId === currentBusiness.id)
+    : [];
 
   const filteredCustomers = customers.filter(customer => {
     const searchLower = searchTerm.toLowerCase();
