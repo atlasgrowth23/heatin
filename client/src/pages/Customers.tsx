@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Phone, Mail, MapPin, ArrowRight } from "lucide-react";
-import CustomerForm from "@/components/forms/CustomerForm";
+import SimpleCustomerForm from "@/components/forms/SimpleCustomerForm";
 import { formatPhoneNumber } from "@/lib/utils";
 import type { Customer } from "@shared/schema";
 
@@ -49,7 +49,7 @@ export default function Customers() {
             <DialogHeader>
               <DialogTitle>Add New Customer</DialogTitle>
             </DialogHeader>
-            <CustomerForm onSuccess={() => setIsDialogOpen(false)} />
+            <SimpleCustomerForm onSuccess={() => setIsDialogOpen(false)} />
           </DialogContent>
         </Dialog>
       </div>
