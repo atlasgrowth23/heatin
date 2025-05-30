@@ -163,6 +163,46 @@ export const jobRoutes = pgTable("job_routes", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Global pricebook template table
+export const globalPricebook = pgTable("global_pricebook", {
+  id: serial("id").primaryKey(),
+  sku: text("sku").notNull().unique(),
+  category: text("category").notNull(),
+  taskName: text("task_name").notNull(),
+  techNotes: text("tech_notes"),
+  customerDescription: text("customer_description"),
+  standardPrice: decimal("standard_price", { precision: 10, scale: 2 }).notNull(),
+  membershipPrice: decimal("membership_price", { precision: 10, scale: 2 }),
+  afterHoursPrice: decimal("after_hours_price", { precision: 10, scale: 2 }),
+  estHours: decimal("est_hours", { precision: 4, scale: 2 }),
+  equipmentType: text("equipment_type"),
+  partsKit: text("parts_kit"),
+  warrantyCode: text("warranty_code"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Company-specific pricebook (copied from global template)
+export const companyPricebook = pgTable("company_pricebook", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").references(() => companies.id).notNull(),
+  sku: text("sku").notNull(),
+  category: text("category").notNull(),
+  taskName: text("task_name").notNull(),
+  techNotes: text("tech_notes"),
+  customerDescription: text("customer_description"),
+  standardPrice: decimal("standard_price", { precision: 10, scale: 2 }).notNull(),
+  membershipPrice: decimal("membership_price", { precision: 10, scale: 2 }),
+  afterHoursPrice: decimal("after_hours_price", { precision: 10, scale: 2 }),
+  estHours: decimal("est_hours", { precision: 4, scale: 2 }),
+  equipmentType: text("equipment_type"),
+  partsKit: text("parts_kit"),
+  warrantyCode: text("warranty_code"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({ id: true });
 export const insertCompanySchema = createInsertSchema(companies).omit({ id: true, createdAt: true });
@@ -187,6 +227,8 @@ export const insertInventorySchema = createInsertSchema(inventory).omit({ id: tr
 export const insertEquipmentSchema = createInsertSchema(equipment).omit({ id: true });
 export const insertTechnicianLocationSchema = createInsertSchema(technicianLocations).omit({ id: true, timestamp: true });
 export const insertJobRouteSchema = createInsertSchema(jobRoutes).omit({ id: true, createdAt: true });
+export const insertGlobalPricebookSchema = createInsertSchema(globalPricebook).omit({ id: true, createdAt: true });
+export const insertCompanyPricebookSchema = createInsertSchema(companyPricebook).omit({ id: true, createdAt: true, updatedAt: true });
 
 // Types
 export type User = typeof users.$inferSelect;
@@ -201,6 +243,8 @@ export type Inventory = typeof inventory.$inferSelect;
 export type Equipment = typeof equipment.$inferSelect;
 export type TechnicianLocation = typeof technicianLocations.$inferSelect;
 export type JobRoute = typeof jobRoutes.$inferSelect;
+export type GlobalPricebook = typeof globalPricebook.$inferSelect;
+export type CompanyPricebook = typeof companyPricebook.$inferSelect;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertCompany = z.infer<typeof insertCompanySchema>;
@@ -214,3 +258,5 @@ export type InsertInventory = z.infer<typeof insertInventorySchema>;
 export type InsertEquipment = z.infer<typeof insertEquipmentSchema>;
 export type InsertTechnicianLocation = z.infer<typeof insertTechnicianLocationSchema>;
 export type InsertJobRoute = z.infer<typeof insertJobRouteSchema>;
+export type InsertGlobalPricebook = z.infer<typeof insertGlobalPricebookSchema>;
+export type InsertCompanyPricebook = z.infer<typeof insertCompanyPricebookSchema>;
