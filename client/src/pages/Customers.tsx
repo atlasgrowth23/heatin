@@ -19,11 +19,17 @@ export default function Customers() {
     queryKey: ["/api/customers"],
   });
 
-  const filteredCustomers = customers.filter(customer =>
-    customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.phone?.includes(searchTerm)
-  );
+  const filteredCustomers = customers.filter(customer => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      customer.name.toLowerCase().includes(searchLower) ||
+      (customer.email && customer.email.toLowerCase().includes(searchLower)) ||
+      (customer.phone && customer.phone.includes(searchTerm)) ||
+      (customer.city && customer.city.toLowerCase().includes(searchLower)) ||
+      (customer.address && customer.address.toLowerCase().includes(searchLower)) ||
+      (customer.state && customer.state.toLowerCase().includes(searchLower))
+    );
+  });
 
   if (isLoading) {
     return <div>Loading customers...</div>;
@@ -55,7 +61,7 @@ export default function Customers() {
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
               <Input
-                placeholder="Search customers..."
+                placeholder="Search by name, phone, email, city, or address..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -66,50 +72,84 @@ export default function Customers() {
             </Badge>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {filteredCustomers.length === 0 ? (
-            <div className="text-center py-8 text-slate-500">
+            <div className="text-center py-12 text-slate-500">
               {searchTerm ? "No customers found matching your search." : "No customers added yet."}
             </div>
           ) : (
-            <div className="grid gap-4">
-              {filteredCustomers.map((customer) => (
-                <Link key={customer.id} href={`/customers/${customer.id}`}>
-                  <div className="p-4 border border-slate-200 rounded-lg hover:border-slate-300 transition-colors cursor-pointer group">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-slate-800 group-hover:text-blue-600">{customer.name}</h3>
-                        <div className="mt-2 space-y-1">
-                          {customer.email && (
-                            <div className="flex items-center text-sm text-slate-600">
-                              <Mail className="w-4 h-4 mr-2" />
-                              {customer.email}
+            <div className="overflow-hidden">
+              {filteredCustomers.map((customer, index) => (
+                <div key={customer.id} className={`${index !== 0 ? 'border-t border-slate-100' : ''}`}>
+                  <Link href={`/customers/${customer.id}`}>
+                    <div className="p-6 hover:bg-slate-50 transition-colors cursor-pointer group">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          {/* Customer Avatar */}
+                          <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                            <span className="text-blue-700 font-semibold text-lg">
+                              {customer.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                            </span>
+                          </div>
+                          
+                          {/* Customer Info */}
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-slate-900 group-hover:text-blue-600 text-lg">
+                              {customer.name}
+                            </h3>
+                            <div className="flex items-center space-x-4 mt-1">
+                              {customer.phone && (
+                                <div className="flex items-center text-sm text-slate-600">
+                                  <Phone className="w-4 h-4 mr-1" />
+                                  {customer.phone}
+                                </div>
+                              )}
+                              {customer.email && (
+                                <div className="flex items-center text-sm text-slate-600">
+                                  <Mail className="w-4 h-4 mr-1" />
+                                  {customer.email}
+                                </div>
+                              )}
                             </div>
-                          )}
-                          {customer.phone && (
-                            <div className="flex items-center text-sm text-slate-600">
-                              <Phone className="w-4 h-4 mr-2" />
-                              {customer.phone}
-                            </div>
-                          )}
-                          {customer.address && (
-                            <div className="flex items-center text-sm text-slate-600">
-                              <MapPin className="w-4 h-4 mr-2" />
-                              {customer.address}
-                              {customer.city && `, ${customer.city}`}
-                              {customer.state && `, ${customer.state}`}
-                              {customer.zipCode && ` ${customer.zipCode}`}
-                            </div>
-                          )}
+                            {customer.address && (
+                              <div className="flex items-center text-sm text-slate-500 mt-1">
+                                <MapPin className="w-4 h-4 mr-1" />
+                                {customer.address}{customer.city && `, ${customer.city}`}{customer.state && `, ${customer.state}`}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        {customer.notes && (
-                          <p className="mt-2 text-sm text-slate-500">{customer.notes}</p>
-                        )}
+                        
+                        {/* Quick Actions */}
+                        <div className="flex items-center space-x-2">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              if (customer.phone) window.open(`tel:${customer.phone}`);
+                            }}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <Phone className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              if (customer.email) window.open(`mailto:${customer.email}`);
+                            }}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <Mail className="w-4 h-4" />
+                          </Button>
+                          <ArrowRight className="w-5 h-5 text-slate-400 group-hover:text-blue-600 transition-colors" />
+                        </div>
                       </div>
-                      <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-blue-600" />
                     </div>
-                  </div>
-                </Link>
+                  </Link>
+                </div>
               ))}
             </div>
           )}
