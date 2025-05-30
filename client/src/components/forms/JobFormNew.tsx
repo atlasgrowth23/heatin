@@ -237,12 +237,26 @@ export default function JobFormNew({ onSuccess }: JobFormNewProps) {
               placeholder="Search customers by name..."
               value={customerSearch}
               onChange={(e) => setCustomerSearch(e.target.value)}
-              className="pr-10"
+              className="pr-20"
             />
-            <User className="absolute right-3 top-3 h-4 w-4 text-slate-400" />
+            {customerId && customerSearch ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="absolute right-8 top-1 h-8 w-8 p-0"
+                onClick={() => {
+                  setCustomerId("");
+                  setCustomerSearch("");
+                }}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            ) : null}
+            <User className="absolute right-2 top-3 h-4 w-4 text-slate-400" />
             
             {/* Customer Search Results */}
-            {customerSearch && filteredCustomers.length > 0 && (
+            {customerSearch && filteredCustomers.length > 0 && !customerId && (
               <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
                 {filteredCustomers.slice(0, 5).map((customer) => (
                   <div
@@ -251,7 +265,6 @@ export default function JobFormNew({ onSuccess }: JobFormNewProps) {
                     onClick={() => {
                       setCustomerId(customer.id.toString());
                       setCustomerSearch(customer.name);
-                      setShowCustomerResults(false);
                     }}
                   >
                     <div className="font-medium">{customer.name}</div>
@@ -387,18 +400,22 @@ export default function JobFormNew({ onSuccess }: JobFormNewProps) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="technician">Technician (optional)</Label>
+          <Label htmlFor="technician">Technician</Label>
           <Select value={technicianId} onValueChange={setTechnicianId}>
             <SelectTrigger>
-              <SelectValue placeholder="Unassigned" />
+              <SelectValue placeholder="Select technician or leave unassigned" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="unassigned">Unassigned</SelectItem>
-              {technicians.map((tech: any) => (
-                <SelectItem key={tech.id} value={tech.id.toString()}>
-                  {tech.name}
-                </SelectItem>
-              ))}
+              <SelectItem value="">Unassigned</SelectItem>
+              {technicians.length > 0 ? (
+                technicians.map((tech) => (
+                  <SelectItem key={tech.id} value={tech.id.toString()}>
+                    {tech.name}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="" disabled>No technicians available</SelectItem>
+              )}
             </SelectContent>
           </Select>
         </div>
