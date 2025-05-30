@@ -1,13 +1,15 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Search, Filter, Clock, User, MapPin, Plus } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Search, Filter, Clock, User, MapPin, Plus, Play, Pause, CheckCircle, Edit, MoreVertical, Timer } from "lucide-react";
 import { format } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
 import JobFormNew from "@/components/forms/JobFormNew";
 import type { Job, Customer } from "@shared/schema";
 
@@ -16,6 +18,10 @@ export default function ServiceCalls() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingJob, setEditingJob] = useState<Job | null>(null);
+  
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: jobs = [], isLoading } = useQuery<Job[]>({
     queryKey: ["/api/jobs"],
@@ -25,9 +31,51 @@ export default function ServiceCalls() {
     queryKey: ["/api/customers"],
   });
 
+  // Update job status mutation
+  const updateJobMutation = useMutation({
+    mutationFn: async ({ jobId, updates }: { jobId: number; updates: any }) => {
+      const response = await fetch(`/api/jobs/${jobId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(updates),
+      });
+      if (!response.ok) throw new Error("Failed to update job");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
+      toast({ title: "Success", description: "Service call updated successfully" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to update service call", variant: "destructive" });
+    },
+  });
+
   const getCustomerName = (customerId: number) => {
     const customer = customers.find(c => c.id === customerId);
     return customer?.name || "Unknown Customer";
+  };
+
+  const handleStatusChange = (jobId: number, newStatus: string) => {
+    const updates: any = { status: newStatus };
+    
+    // Add timestamps for status changes
+    if (newStatus === "in_progress") {
+      updates.startedAt = new Date().toISOString();
+    } else if (newStatus === "completed") {
+      updates.completedDate = new Date().toISOString();
+    }
+    
+    updateJobMutation.mutate({ jobId, updates });
+  };
+
+  const startTimer = (jobId: number) => {
+    handleStatusChange(jobId, "in_progress");
+  };
+
+  const completeJob = (jobId: number) => {
+    handleStatusChange(jobId, "completed");
   };
 
   const filteredJobs = jobs.filter(job => {
@@ -239,6 +287,64 @@ export default function ServiceCalls() {
                         View Details
                       </Button>
                     </div>
+                    
+                    {/* Quick Actions */}
+                    <div className="flex items-center space-x-2">
+                      {job.status === "scheduled" && (
+                        <Button
+                          size="sm"
+                          onClick={() => startTimer(job.id)}
+                          className="bg-green-600 hover:bg-green-700"
+                        >
+                          <Play className="w-4 h-4 mr-1" />
+                          Start
+                        </Button>
+                      )}
+                      
+                      {job.status === "in_progress" && (
+                        <Button
+                          size="sm"
+                          onClick={() => completeJob(job.id)}
+                          className="bg-blue-600 hover:bg-blue-700"
+                        >
+                          <CheckCircle className="w-4 h-4 mr-1" />
+                          Complete
+                        </Button>
+                      )}
+                      
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm">
+                            <MoreVertical className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => setEditingJob(job)}>
+                            <Edit className="w-4 h-4 mr-2" />
+                            Edit Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleStatusChange(job.id, "scheduled")}>
+                            <Timer className="w-4 h-4 mr-2" />
+                            Mark Scheduled
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleStatusChange(job.id, "in_progress")}>
+                            <Play className="w-4 h-4 mr-2" />
+                            Mark In Progress
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleStatusChange(job.id, "completed")}>
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            Mark Completed
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleStatusChange(job.id, "cancelled")}
+                            className="text-red-600"
+                          >
+                            <Pause className="w-4 h-4 mr-2" />
+                            Cancel Job
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -246,6 +352,23 @@ export default function ServiceCalls() {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Job Dialog */}
+      <Dialog open={!!editingJob} onOpenChange={() => setEditingJob(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Service Call</DialogTitle>
+          </DialogHeader>
+          {editingJob && (
+            <div className="text-sm text-slate-600 p-4">
+              <p>Editing: {editingJob.title || "Service Call"}</p>
+              <p>Customer: {getCustomerName(editingJob.customerId)}</p>
+              <p>Status: {editingJob.status}</p>
+              <p className="mt-4 text-slate-500">Edit functionality will be available soon. For now, use the quick actions to update status.</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
