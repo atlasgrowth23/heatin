@@ -54,15 +54,15 @@ export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }: Sideb
             const isActive = location === item.href;
             return (
               <Link key={item.name} href={item.href}>
-                <a className={cn(
-                  "flex items-center space-x-3 p-3 rounded-lg transition-colors",
+                <div className={cn(
+                  "flex items-center space-x-3 p-3 rounded-lg transition-colors cursor-pointer",
                   isActive 
                     ? "bg-primary text-primary-foreground" 
                     : "text-slate-600 hover:bg-slate-100"
                 )}>
                   <item.icon className="w-5 h-5" />
                   <span>{item.name}</span>
-                </a>
+                </div>
               </Link>
             );
           })}
@@ -108,9 +108,9 @@ export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }: Sideb
                 const isActive = location === item.href;
                 return (
                   <Link key={item.name} href={item.href}>
-                    <a 
+                    <div 
                       className={cn(
-                        "flex items-center space-x-3 p-3 rounded-lg transition-colors",
+                        "flex items-center space-x-3 p-3 rounded-lg transition-colors cursor-pointer",
                         isActive 
                           ? "bg-primary text-primary-foreground" 
                           : "text-slate-600 hover:bg-slate-100"
@@ -119,7 +119,7 @@ export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }: Sideb
                     >
                       <item.icon className="w-5 h-5" />
                       <span>{item.name}</span>
-                    </a>
+                    </div>
                   </Link>
                 );
               })}

@@ -129,8 +129,15 @@ export class MemStorage implements IStorage {
 
   async createCustomer(insertCustomer: InsertCustomer): Promise<Customer> {
     const customer: Customer = { 
-      ...insertCustomer, 
       id: this.currentCustomerId++,
+      name: insertCustomer.name,
+      email: insertCustomer.email || null,
+      phone: insertCustomer.phone || null,
+      address: insertCustomer.address || null,
+      city: insertCustomer.city || null,
+      state: insertCustomer.state || null,
+      zipCode: insertCustomer.zipCode || null,
+      notes: insertCustomer.notes || null,
       createdAt: new Date()
     };
     this.customers.set(customer.id, customer);
@@ -160,7 +167,16 @@ export class MemStorage implements IStorage {
   }
 
   async createTechnician(insertTechnician: InsertTechnician): Promise<Technician> {
-    const technician: Technician = { ...insertTechnician, id: this.currentTechnicianId++ };
+    const technician: Technician = { 
+      id: this.currentTechnicianId++,
+      userId: insertTechnician.userId || null,
+      name: insertTechnician.name,
+      email: insertTechnician.email || null,
+      phone: insertTechnician.phone || null,
+      specialties: insertTechnician.specialties || null,
+      status: insertTechnician.status || "active",
+      hourlyRate: insertTechnician.hourlyRate || null
+    };
     this.technicians.set(technician.id, technician);
     return technician;
   }
@@ -210,8 +226,19 @@ export class MemStorage implements IStorage {
 
   async createJob(insertJob: InsertJob): Promise<Job> {
     const job: Job = { 
-      ...insertJob, 
       id: this.currentJobId++,
+      customerId: insertJob.customerId,
+      technicianId: insertJob.technicianId || null,
+      title: insertJob.title,
+      description: insertJob.description || null,
+      status: insertJob.status || "scheduled",
+      priority: insertJob.priority || "normal",
+      scheduledDate: insertJob.scheduledDate || null,
+      completedDate: insertJob.completedDate || null,
+      estimatedDuration: insertJob.estimatedDuration || null,
+      actualDuration: insertJob.actualDuration || null,
+      address: insertJob.address || null,
+      notes: insertJob.notes || null,
       createdAt: new Date()
     };
     this.jobs.set(job.id, job);
@@ -246,8 +273,16 @@ export class MemStorage implements IStorage {
 
   async createInvoice(insertInvoice: InsertInvoice): Promise<Invoice> {
     const invoice: Invoice = { 
-      ...insertInvoice, 
       id: this.currentInvoiceId++,
+      customerId: insertInvoice.customerId,
+      jobId: insertInvoice.jobId || null,
+      invoiceNumber: insertInvoice.invoiceNumber,
+      status: insertInvoice.status || "pending",
+      subtotal: insertInvoice.subtotal,
+      tax: insertInvoice.tax || "0.00",
+      total: insertInvoice.total,
+      dueDate: insertInvoice.dueDate || null,
+      paidDate: insertInvoice.paidDate || null,
       createdAt: new Date()
     };
     this.invoices.set(invoice.id, invoice);
@@ -301,7 +336,17 @@ export class MemStorage implements IStorage {
   }
 
   async createInventoryItem(insertItem: InsertInventory): Promise<Inventory> {
-    const item: Inventory = { ...insertItem, id: this.currentInventoryId++ };
+    const item: Inventory = { 
+      id: this.currentInventoryId++,
+      name: insertItem.name,
+      description: insertItem.description || null,
+      sku: insertItem.sku,
+      category: insertItem.category || null,
+      quantity: insertItem.quantity || 0,
+      minQuantity: insertItem.minQuantity || 0,
+      unitPrice: insertItem.unitPrice || null,
+      supplier: insertItem.supplier || null
+    };
     this.inventory.set(item.id, item);
     return item;
   }
@@ -337,7 +382,18 @@ export class MemStorage implements IStorage {
   }
 
   async createEquipmentItem(insertEquipment: InsertEquipment): Promise<Equipment> {
-    const equipment: Equipment = { ...insertEquipment, id: this.currentEquipmentId++ };
+    const equipment: Equipment = { 
+      id: this.currentEquipmentId++,
+      customerId: insertEquipment.customerId,
+      type: insertEquipment.type,
+      brand: insertEquipment.brand || null,
+      model: insertEquipment.model || null,
+      serialNumber: insertEquipment.serialNumber || null,
+      installDate: insertEquipment.installDate || null,
+      lastServiceDate: insertEquipment.lastServiceDate || null,
+      nextServiceDate: insertEquipment.nextServiceDate || null,
+      notes: insertEquipment.notes || null
+    };
     this.equipment.set(equipment.id, equipment);
     return equipment;
   }

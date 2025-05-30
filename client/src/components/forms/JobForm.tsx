@@ -130,8 +130,8 @@ export default function JobForm({ onSuccess }: JobFormProps) {
               <FormItem>
                 <FormLabel>Technician</FormLabel>
                 <Select 
-                  onValueChange={(value) => field.onChange(value ? parseInt(value) : null)} 
-                  value={field.value?.toString() || ""}
+                  onValueChange={(value) => field.onChange(value === "unassigned" ? null : parseInt(value))} 
+                  value={field.value?.toString() || "unassigned"}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -139,7 +139,7 @@ export default function JobForm({ onSuccess }: JobFormProps) {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="">Unassigned</SelectItem>
+                    <SelectItem value="unassigned">Unassigned</SelectItem>
                     {technicians.filter(tech => tech.status === "active").map((technician) => (
                       <SelectItem key={technician.id} value={technician.id.toString()}>
                         {technician.name}
