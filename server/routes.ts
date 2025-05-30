@@ -605,6 +605,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Pricebook routes
+  app.get("/api/pricebook", isAuthenticated, async (req, res) => {
+    try {
+      const companyId = await storage.getUserCompanyId(req.session.userId!);
+      if (!companyId) {
+        return res.status(404).json({ error: "User company not found" });
+      }
+
+      // Ensure company has pricebook (copy from global if needed)
+      await storage.copyGlobalToCompany(companyId);
+      
+      const pricebook = await storage.getCompanyPricebook(companyId);
+      res.json(pricebook);
+    } catch (error) {
+      console.error("Error fetching pricebook:", error);
+      res.status(500).json({ error: "Failed to fetch pricebook" });
+    }
+  });
+
+  app.post("/api/pricebook", isAuthenticated, async (req, res) => {
+    try {
+      const companyId = await storage.getUserCompanyId(req.session.userId!);
+      if (!companyId) {
+        return res.status(404).json({ error: "User company not found" });
+      }
+
+      const itemData = { ...req.body, companyId };
+      const newItem = await storage.createCompanyPricebook(itemData);
+      res.status(201).json(newItem);
+    } catch (error) {
+      console.error("Error creating pricebook item:", error);
+      res.status(500).json({ error: "Failed to create pricebook item" });
+    }
+  });
+
+  app.put("/api/pricebook/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updatedItem = await storage.updateCompanyPricebook(id, req.body);
+      
+      if (!updatedItem) {
+        return res.status(404).json({ error: "Pricebook item not found" });
+      }
+      
+      res.json(updatedItem);
+    } catch (error) {
+      console.error("Error updating pricebook item:", error);
+      res.status(500).json({ error: "Failed to update pricebook item" });
+    }
+  });
+
+  app.delete("/api/pricebook/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteCompanyPricebook(id);
+      
+      if (!success) {
+        return res.status(404).json({ error: "Pricebook item not found" });
+      }
+      
+      res.json({ message: "Pricebook item deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting pricebook item:", error);
+      res.status(500).json({ error: "Failed to delete pricebook item" });
+    }
+  });
+
   // Register tenant-specific routes
   registerTenantRoutes(app);
 
