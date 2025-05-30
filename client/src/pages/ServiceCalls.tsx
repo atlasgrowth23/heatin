@@ -219,7 +219,7 @@ export default function ServiceCalls() {
                         
                         <div className="flex items-center">
                           <User className="w-4 h-4 mr-1" />
-                          {getTechnicianName(job.technicianId)}
+                          {job.technicianId ? "Assigned" : "Unassigned"}
                         </div>
                         
                         {job.address && (

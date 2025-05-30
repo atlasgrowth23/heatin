@@ -15,6 +15,7 @@ import Inventory from "@/pages/Inventory";
 import Technicians from "@/pages/Technicians";
 import Reports from "@/pages/Reports";
 import Settings from "@/pages/Settings";
+import MapsTest from "@/pages/MapsTest";
 import Login from "@/pages/Login";
 import Landing from "@/pages/Landing";
 import NotFound from "@/pages/not-found";
@@ -50,6 +51,7 @@ function Router() {
 
             <Route path="/reports" component={Reports} />
             <Route path="/settings" component={Settings} />
+            <Route path="/maps-test" component={MapsTest} />
             <Route path="/" component={Dashboard} />
             <Route component={NotFound} />
           </Switch>

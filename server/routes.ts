@@ -209,6 +209,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to delete user" });
     }
   });
+
+  // Maps API test
+  app.get("/api/maps/geocode", isAuthenticated, async (req, res) => {
+    try {
+      const { address } = req.query;
+      if (!address) {
+        return res.status(400).json({ error: "Address parameter is required" });
+      }
+
+      const { mapsService } = await import("./maps");
+      const result = await mapsService.geocodeAddress(address as string);
+      
+      if (!result) {
+        return res.status(404).json({ error: "Address not found" });
+      }
+
+      res.json(result);
+    } catch (error) {
+      console.error("Geocoding error:", error);
+      res.status(500).json({ error: "Failed to geocode address" });
+    }
+  });
   
   // Customers - filter by user's company
   app.get("/api/customers", isAuthenticated, async (req: any, res) => {
