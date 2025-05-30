@@ -1,11 +1,10 @@
 import { eq, and, gte, lte } from "drizzle-orm";
 import { db } from "./db";
 import { 
-  users, customers, technicians, jobs, invoices, invoiceItems, inventory, equipment, companies, userRoles, globalPricebook, companyPricebook,
+  users, customers, technicians, jobs, invoices, invoiceItems, inventory, equipment, companies, userRoles,
   type User, type Customer, type Technician, type Job, type Invoice, type InvoiceItem, 
-  type Inventory, type Equipment, type GlobalPricebook, type CompanyPricebook,
-  type InsertUser, type InsertCustomer, type InsertTechnician,
-  type InsertJob, type InsertInvoice, type InsertInvoiceItem, type InsertInventory, type InsertEquipment, type InsertCompanyPricebook
+  type Inventory, type Equipment, type InsertUser, type InsertCustomer, type InsertTechnician,
+  type InsertJob, type InsertInvoice, type InsertInvoiceItem, type InsertInventory, type InsertEquipment
 } from "@shared/schema";
 
 export interface IStorage {
@@ -75,14 +74,6 @@ export interface IStorage {
   updateEquipmentItem(id: number, equipment: Partial<InsertEquipment>): Promise<Equipment | undefined>;
   deleteEquipmentItem(id: number): Promise<boolean>;
   getEquipmentNeedingService(): Promise<Equipment[]>;
-  
-  // Pricebook
-  getGlobalPricebook(): Promise<GlobalPricebook[]>;
-  getCompanyPricebook(companyId: number): Promise<CompanyPricebook[]>;
-  createCompanyPricebook(item: InsertCompanyPricebook): Promise<CompanyPricebook>;
-  updateCompanyPricebook(id: number, item: Partial<InsertCompanyPricebook>): Promise<CompanyPricebook | undefined>;
-  deleteCompanyPricebook(id: number): Promise<boolean>;
-  copyGlobalToCompany(companyId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -341,83 +332,6 @@ export class DatabaseStorage implements IStorage {
     );
   }
 
-  // Pricebook methods
-  async getGlobalPricebook(): Promise<GlobalPricebook[]> {
-    const result = await db.select()
-      .from(globalPricebook)
-      .where(eq(globalPricebook.isActive, true))
-      .orderBy(globalPricebook.category, globalPricebook.taskName);
-    return result;
-  }
-
-  async getCompanyPricebook(companyId: number): Promise<CompanyPricebook[]> {
-    const result = await db.select()
-      .from(companyPricebook)
-      .where(and(
-        eq(companyPricebook.companyId, companyId),
-        eq(companyPricebook.isActive, true)
-      ))
-      .orderBy(companyPricebook.category, companyPricebook.taskName);
-    return result;
-  }
-
-  async createCompanyPricebook(insertItem: InsertCompanyPricebook): Promise<CompanyPricebook> {
-    const result = await db.insert(companyPricebook).values(insertItem).returning();
-    return result[0];
-  }
-
-  async updateCompanyPricebook(id: number, updateData: Partial<InsertCompanyPricebook>): Promise<CompanyPricebook | undefined> {
-    const result = await db.update(companyPricebook)
-      .set({ ...updateData, updatedAt: new Date() })
-      .where(eq(companyPricebook.id, id))
-      .returning();
-    return result[0];
-  }
-
-  async deleteCompanyPricebook(id: number): Promise<boolean> {
-    const result = await db.update(companyPricebook)
-      .set({ isActive: false })
-      .where(eq(companyPricebook.id, id))
-      .returning();
-    return result.length > 0;
-  }
-
-  async copyGlobalToCompany(companyId: number): Promise<void> {
-    // First check if company already has pricebook items
-    const existing = await db.select()
-      .from(companyPricebook)
-      .where(eq(companyPricebook.companyId, companyId))
-      .limit(1);
-    
-    if (existing.length > 0) {
-      return; // Company already has pricebook
-    }
-
-    // Get all global pricebook items
-    const globalItems = await db.select()
-      .from(globalPricebook)
-      .where(eq(globalPricebook.isActive, true));
-
-    // Copy to company pricebook
-    for (const item of globalItems) {
-      await db.insert(companyPricebook).values({
-        companyId,
-        sku: item.sku,
-        category: item.category,
-        taskName: item.taskName,
-        techNotes: item.techNotes,
-        customerDescription: item.customerDescription,
-        standardPrice: item.standardPrice,
-        membershipPrice: item.membershipPrice,
-        afterHoursPrice: item.afterHoursPrice,
-        estHours: item.estHours,
-        equipmentType: item.equipmentType,
-        partsKit: item.partsKit,
-        warrantyCode: item.warrantyCode,
-        isActive: true
-      });
-    }
-  }
 
 }
 
