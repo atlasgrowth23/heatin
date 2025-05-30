@@ -24,6 +24,8 @@ const getNavigation = (businessSlug: string | undefined) => [
 
 export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }: SidebarProps) {
   const [location] = useLocation();
+  const { businessSlug } = useTenant();
+  const navigation = getNavigation(businessSlug);
 
   return (
     <>
