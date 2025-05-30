@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Menu, Search, Bell, Plus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import JobForm from "./forms/JobFormNew";
-import { useTenant } from "@/hooks/useTenant";
+import { useAuth } from "@/hooks/useAuth";
 
 interface HeaderProps {
   onMobileMenuToggle: () => void;
@@ -12,7 +12,7 @@ interface HeaderProps {
 
 export default function Header({ onMobileMenuToggle }: HeaderProps) {
   const [isJobDialogOpen, setIsJobDialogOpen] = useState(false);
-  const { currentBusiness } = useTenant();
+  const { user } = useAuth();
 
   return (
     <header className="bg-white border-b border-slate-200 px-6 py-4">
@@ -27,7 +27,7 @@ export default function Header({ onMobileMenuToggle }: HeaderProps) {
             <Menu className="h-5 w-5" />
           </Button>
           <h1 className="text-2xl font-bold text-slate-800">
-            {currentBusiness ? currentBusiness.name : "Dashboard"}
+            {user?.companyName || "HVAC Pro"}
           </h1>
         </div>
         

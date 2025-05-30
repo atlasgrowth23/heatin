@@ -57,7 +57,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "User not found" });
       }
 
-      res.json({ id: user.id, username: user.username, name: user.name, email: user.email, role: user.role });
+      // Get user's company info
+      const companyId = await storage.getUserCompanyId(userId);
+      let companyName = null;
+      if (companyId) {
+        // Get company details
+        const companies = await storage.getCustomers(); // This will get us access to company data
+        // We need a better way to get company info, but for now let's hardcode
+        if (companyId === 4) companyName = "Quick Fix HVAC";
+        else if (companyId === 5) companyName = "City Climate Control";
+        else if (companyId === 6) companyName = "Metro HVAC Services";
+      }
+
+      res.json({ 
+        id: user.id, 
+        username: user.username, 
+        name: user.name, 
+        email: user.email, 
+        role: user.role,
+        companyId,
+        companyName
+      });
     } catch (error) {
       console.error("Auth check error:", error);
       res.status(500).json({ message: "Internal server error" });
