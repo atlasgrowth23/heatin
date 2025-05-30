@@ -139,8 +139,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/customers", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.id;
+      const companyId = await storage.getUserCompanyId(userId);
+      if (!companyId) {
+        return res.status(403).json({ message: "User not associated with any company" });
+      }
+      
       const customerData = insertCustomerSchema.parse(req.body);
-      customerData.companyId = 4; // Default to Quick Fix HVAC for now
+      customerData.companyId = companyId;
       const customer = await storage.createCustomer(customerData);
       res.status(201).json(customer);
     } catch (error) {
@@ -219,10 +225,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Jobs
-  app.get("/api/jobs", async (req, res) => {
-    const jobs = await storage.getJobs();
-    res.json(jobs);
+  // Jobs - filter by user's company
+  app.get("/api/jobs", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const companyId = await storage.getUserCompanyId(userId);
+      if (!companyId) {
+        return res.status(403).json({ message: "User not associated with any company" });
+      }
+      
+      // Get all jobs and filter by company through customers
+      const allJobs = await storage.getJobs();
+      const customers = await storage.getCustomers(companyId);
+      const customerIds = customers.map(c => c.id);
+      const filteredJobs = allJobs.filter(job => customerIds.includes(job.customerId));
+      
+      res.json(filteredJobs);
+    } catch (error) {
+      console.error("Error fetching jobs:", error);
+      res.status(500).json({ message: "Failed to fetch jobs" });
+    }
   });
 
   app.get("/api/jobs/today", async (req, res) => {
@@ -322,24 +344,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Dashboard stats
-  app.get("/api/dashboard/stats", async (req, res) => {
-    const jobs = await storage.getJobs();
-    const invoices = await storage.getInvoices();
-    const technicians = await storage.getTechnicians();
-    
-    const activeJobs = jobs.filter(job => job.status === "scheduled" || job.status === "in_progress").length;
-    const monthlyRevenue = invoices
-      .filter(invoice => invoice.status === "paid" && invoice.paidDate && new Date(invoice.paidDate).getMonth() === new Date().getMonth())
-      .reduce((sum, invoice) => sum + parseFloat(invoice.total), 0);
-    const activeTechnicians = technicians.filter(tech => tech.status === "active").length;
-    
-    res.json({
-      activeJobs,
-      monthlyRevenue,
-      activeTechnicians,
-      customerSatisfaction: 4.8, // This would come from actual reviews
-    });
+  // Dashboard stats - filter by user's company
+  app.get("/api/dashboard/stats", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const companyId = await storage.getUserCompanyId(userId);
+      if (!companyId) {
+        return res.status(403).json({ message: "User not associated with any company" });
+      }
+      
+      const allJobs = await storage.getJobs();
+      const customers = await storage.getCustomers(companyId);
+      const customerIds = customers.map(c => c.id);
+      const jobs = allJobs.filter(job => customerIds.includes(job.customerId));
+      
+      const invoices = await storage.getInvoices();
+      const technicians = await storage.getTechnicians(companyId);
+      
+      const activeJobs = jobs.filter(job => job.status === "scheduled" || job.status === "in_progress").length;
+      const monthlyRevenue = invoices
+        .filter(invoice => invoice.status === "paid" && invoice.paidDate && new Date(invoice.paidDate).getMonth() === new Date().getMonth())
+        .reduce((sum, invoice) => sum + parseFloat(invoice.total), 0);
+      const activeTechnicians = technicians.filter(tech => tech.status === "active").length;
+      
+      res.json({
+        activeJobs,
+        monthlyRevenue,
+        activeTechnicians,
+        customerSatisfaction: 4.8,
+      });
+    } catch (error) {
+      console.error("Error fetching dashboard stats:", error);
+      res.status(500).json({ message: "Failed to fetch dashboard stats" });
+    }
   });
 
   // Route optimization endpoints
