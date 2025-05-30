@@ -1,16 +1,14 @@
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Phone, Mail, MapPin, ArrowRight } from "lucide-react";
 import CustomerForm from "@/components/forms/CustomerForm";
-import { queryClient } from "@/lib/queryClient";
 import { formatPhoneNumber } from "@/lib/utils";
-import { useTenant } from "@/hooks/useTenant";
 import type { Customer } from "@shared/schema";
 
 export default function Customers() {
