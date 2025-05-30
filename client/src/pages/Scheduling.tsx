@@ -308,46 +308,64 @@ export default function Scheduling() {
               </CardHeader>
               <CardContent className="pt-0 space-y-2">
                 {dayJobs.length === 0 ? (
-                  <div className="text-xs text-slate-400 text-center py-4">
-                    No jobs scheduled
+                  <div 
+                    className="border-2 border-dashed border-slate-300 rounded-lg p-4 text-center text-slate-500 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-all cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedDate(day);
+                      setIsCreateDialogOpen(true);
+                    }}
+                  >
+                    <Plus className="h-6 w-6 mx-auto mb-1" />
+                    <div className="text-xs font-medium">Schedule Job</div>
                   </div>
                 ) : (
-                  dayJobs.map((job) => (
-                    <div
-                      key={job.id}
-                      className={`p-3 rounded-lg border-l-4 bg-slate-50 hover:bg-slate-100 cursor-pointer transition-colors ${getPriorityColor(job.priority)}`}
-                    >
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between">
-                          <h4 className="text-sm font-medium text-slate-800 truncate">
-                            {getCustomerName(job.customerId)}
-                          </h4>
-                          <Badge className={`text-xs ${getStatusColor(job.status)}`}>
-                            {job.status}
-                          </Badge>
+                  <>
+                    {dayJobs.slice(0, 3).map((job) => (
+                      <div
+                        key={job.id}
+                        className={`p-2 rounded-md text-xs border-l-4 bg-white hover:shadow-md transition-all cursor-pointer ${getPriorityColor(job.priority)} ${getStatusColor(job.status)}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.location.href = '/service-calls';
+                        }}
+                      >
+                        <div className="font-semibold truncate mb-1">{job.title}</div>
+                        <div className="text-slate-600 truncate mb-1">
+                          {getCustomerName(job.customerId)}
                         </div>
-                        
-                        <p className="text-xs text-slate-600 truncate">{job.title}</p>
-                        
-                        <div className="flex items-center text-xs text-slate-500">
-                          <Clock className="w-3 h-3 mr-1" />
-                          {job.scheduledDate ? format(new Date(job.scheduledDate), "h:mm a") : "No time"}
+                        <div className="flex items-center justify-between text-slate-500">
+                          <span className="flex items-center">
+                            <Clock className="w-3 h-3 mr-1" />
+                            {job.scheduledDate ? format(new Date(job.scheduledDate), "h:mm a") : "No time"}
+                          </span>
+                          <span className="text-xs truncate ml-2">{getTechnicianName(job.technicianId)}</span>
                         </div>
-                        
-                        <div className="flex items-center text-xs text-slate-500">
-                          <User className="w-3 h-3 mr-1" />
-                          {getTechnicianName(job.technicianId)}
-                        </div>
-                        
-                        {job.address && (
-                          <div className="flex items-center text-xs text-slate-500">
-                            <MapPin className="w-3 h-3 mr-1" />
-                            <span className="truncate">{job.address}</span>
-                          </div>
-                        )}
                       </div>
+                    ))}
+                    {dayJobs.length > 3 && (
+                      <div 
+                        className="text-xs text-center text-slate-500 py-1 hover:text-blue-600 cursor-pointer font-medium"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.location.href = '/service-calls';
+                        }}
+                      >
+                        +{dayJobs.length - 3} more jobs
+                      </div>
+                    )}
+                    <div 
+                      className="border border-slate-300 rounded-md p-2 text-center text-slate-500 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-all cursor-pointer mt-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedDate(day);
+                        setIsCreateDialogOpen(true);
+                      }}
+                    >
+                      <Plus className="h-4 w-4 mx-auto" />
+                      <div className="text-xs">Add Job</div>
                     </div>
-                  ))
+                  </>
                 )}
               </CardContent>
             </Card>
