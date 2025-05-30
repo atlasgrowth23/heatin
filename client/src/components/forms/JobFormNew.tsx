@@ -50,7 +50,7 @@ export default function JobFormNew({ onSuccess }: JobFormNewProps) {
     queryKey: ["/api/customers"],
   });
 
-  const { data: technicians = [] } = useQuery({
+  const { data: technicians = [] } = useQuery<any[]>({
     queryKey: ["/api/technicians"],
   });
 
@@ -133,11 +133,20 @@ export default function JobFormNew({ onSuccess }: JobFormNewProps) {
 
   const createJobMutation = useMutation({
     mutationFn: async (jobData: any) => {
-      const response = await apiRequest("/api/jobs", {
+      const response = await fetch("/api/jobs", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
         body: JSON.stringify(jobData),
       });
-      return response;
+      
+      if (!response.ok) {
+        throw new Error(`Failed to create service call: ${response.statusText}`);
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
