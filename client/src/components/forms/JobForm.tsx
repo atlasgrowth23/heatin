@@ -178,6 +178,7 @@ export default function JobForm({ onSuccess }: JobFormProps) {
                   placeholder="Detailed description of the work to be performed..."
                   className="min-h-[100px]"
                   {...field} 
+                  value={field.value || ""}
                 />
               </FormControl>
               <FormMessage />
@@ -245,6 +246,7 @@ export default function JobForm({ onSuccess }: JobFormProps) {
                     type="number" 
                     placeholder="120" 
                     {...field}
+                    value={field.value || ""}
                     onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
                   />
                 </FormControl>
@@ -303,7 +305,7 @@ export default function JobForm({ onSuccess }: JobFormProps) {
             <FormItem>
               <FormLabel>Job Address</FormLabel>
               <FormControl>
-                <Input placeholder="Job site address (if different from customer address)" {...field} />
+                <Input placeholder="Job site address (if different from customer address)" {...field} value={field.value || ""} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -321,6 +323,7 @@ export default function JobForm({ onSuccess }: JobFormProps) {
                   placeholder="Additional notes, special instructions, equipment needed..."
                   className="min-h-[100px]"
                   {...field} 
+                  value={field.value || ""}
                 />
               </FormControl>
               <FormMessage />
