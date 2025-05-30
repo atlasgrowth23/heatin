@@ -10,6 +10,7 @@ import {
 export interface IStorage {
   // Companies
   createCompany(company: any): Promise<any>;
+  getUserCompanyId(userId: number): Promise<number | null>;
   
   // User Roles
   createUserRole(userRole: any): Promise<any>;
@@ -20,14 +21,14 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   
   // Customers
-  getCustomers(): Promise<Customer[]>;
+  getCustomers(companyId?: number): Promise<Customer[]>;
   getCustomer(id: number): Promise<Customer | undefined>;
   createCustomer(customer: InsertCustomer): Promise<Customer>;
   updateCustomer(id: number, customer: Partial<InsertCustomer>): Promise<Customer | undefined>;
   deleteCustomer(id: number): Promise<boolean>;
   
   // Technicians
-  getTechnicians(): Promise<Technician[]>;
+  getTechnicians(companyId?: number): Promise<Technician[]>;
   getTechnician(id: number): Promise<Technician | undefined>;
   createTechnician(technician: InsertTechnician): Promise<Technician>;
   updateTechnician(id: number, technician: Partial<InsertTechnician>): Promise<Technician | undefined>;
@@ -82,6 +83,15 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
+  // Get user's company ID
+  async getUserCompanyId(userId: number): Promise<number | null> {
+    const result = await db.select({ companyId: userRoles.companyId })
+      .from(userRoles)
+      .where(eq(userRoles.userId, userId))
+      .limit(1);
+    return result[0]?.companyId || null;
+  }
+
   // User Roles
   async createUserRole(userRoleData: any): Promise<any> {
     const result = await db.insert(userRoles).values(userRoleData).returning();
@@ -105,7 +115,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Customers
-  async getCustomers(): Promise<Customer[]> {
+  async getCustomers(companyId?: number): Promise<Customer[]> {
+    if (companyId) {
+      return await db.select().from(customers).where(eq(customers.companyId, companyId));
+    }
     return await db.select().from(customers);
   }
 
@@ -130,7 +143,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Technicians
-  async getTechnicians(): Promise<Technician[]> {
+  async getTechnicians(companyId?: number): Promise<Technician[]> {
+    if (companyId) {
+      return await db.select().from(technicians).where(eq(technicians.companyId, companyId));
+    }
     return await db.select().from(technicians);
   }
 

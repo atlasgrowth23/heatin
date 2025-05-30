@@ -70,9 +70,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Customers
-  app.get("/api/customers", async (req, res) => {
-    const customers = await storage.getCustomers();
-    res.json(customers);
+  app.get("/api/customers", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const companyId = await storage.getUserCompanyId(userId);
+      const customers = await storage.getCustomers(companyId || undefined);
+      res.json(customers);
+    } catch (error) {
+      console.error("Error fetching customers:", error);
+      res.status(500).json({ message: "Failed to fetch customers" });
+    }
   });
 
   app.get("/api/customers/:id", async (req, res) => {
