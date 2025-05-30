@@ -1,9 +1,6 @@
 import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { insertJobSchema } from "@shared/schema";
-import type { InsertJob, Customer, Technician } from "@shared/schema";
+import type { Customer } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -16,12 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 interface JobFormProps {
@@ -36,61 +28,70 @@ export default function JobForm({ onSuccess }: JobFormProps) {
     queryKey: ["/api/customers"],
   });
 
-  const { data: technicians = [] } = useQuery<Technician[]>({
-    queryKey: ["/api/technicians"],
-  });
-
-  const form = useForm<InsertJob>({
-    resolver: zodResolver(insertJobSchema.extend({
-      scheduledDate: insertJobSchema.shape.scheduledDate.optional(),
-    })),
+  const form = useForm({
+    resolver: zodResolver(insertJobSchema),
     defaultValues: {
-      customerId: undefined,
-      technicianId: undefined,
+      customerId: 0,
       title: "",
       description: "",
       status: "scheduled",
-      priority: "normal",
-      scheduledDate: undefined,
-      estimatedDuration: undefined,
-      address: "",
-      notes: "",
+      priority: "medium",
+      scheduledDate: "",
+      estimatedDuration: 0,
+      technicianId: null,
     },
   });
 
   const createJobMutation = useMutation({
     mutationFn: async (data: InsertJob) => {
-      const response = await apiRequest("POST", "/api/jobs", data);
-      return response.json();
+      console.log("Creating job with data:", data);
+      
+      const response = await fetch("/api/jobs", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(data),
+      });
+
+      console.log("Job creation response status:", response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Job creation error:", errorText);
+        throw new Error(`Failed to create job: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      console.log("Job created successfully:", result);
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
       queryClient.invalidateQueries({ queryKey: ["/api/jobs/today"] });
       toast({
         title: "Success",
-        description: "Job created successfully",
+        description: "Service call created successfully",
       });
       form.reset();
       onSuccess?.();
     },
     onError: (error) => {
+      console.error("Job creation error:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to create job",
+        description: error.message || "Failed to create service call",
         variant: "destructive",
       });
     },
   });
 
   const onSubmit = async (data: InsertJob) => {
+    console.log("Form submitted:", data);
     setIsSubmitting(true);
     try {
-      // Convert string date to Date object if needed
-      const jobData = {
-        ...data,
-        scheduledDate: data.scheduledDate ? new Date(data.scheduledDate) : null,
-      };
-      await createJobMutation.mutateAsync(jobData);
+      await createJobMutation.mutateAsync(data);
     } finally {
       setIsSubmitting(false);
     }
@@ -108,7 +109,7 @@ export default function JobForm({ onSuccess }: JobFormProps) {
                 <FormLabel>Customer *</FormLabel>
                 <Select 
                   onValueChange={(value) => field.onChange(parseInt(value))} 
-                  value={field.value?.toString()}
+                  value={field.value?.toString() || ""}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -130,47 +131,18 @@ export default function JobForm({ onSuccess }: JobFormProps) {
 
           <FormField
             control={form.control}
-            name="technicianId"
+            name="title"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Technician</FormLabel>
-                <Select 
-                  onValueChange={(value) => field.onChange(value === "unassigned" ? null : parseInt(value))} 
-                  value={field.value?.toString() || "unassigned"}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select technician" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="unassigned">Unassigned</SelectItem>
-                    {technicians.filter(tech => tech.status === "active").map((technician) => (
-                      <SelectItem key={technician.id} value={technician.id.toString()}>
-                        {technician.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <FormLabel>Service Title *</FormLabel>
+                <FormControl>
+                  <Input placeholder="e.g., AC Repair, Heating Maintenance" {...field} />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
         </div>
-
-        <FormField
-          control={form.control}
-          name="title"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Job Title *</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g., AC Maintenance, Heater Repair" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
 
         <FormField
           control={form.control}
@@ -180,9 +152,8 @@ export default function JobForm({ onSuccess }: JobFormProps) {
               <FormLabel>Description</FormLabel>
               <FormControl>
                 <Textarea 
-                  placeholder="Detailed description of the work to be performed..."
-                  className="min-h-[100px]"
-                  {...field} 
+                  placeholder="Describe the service needed..."
+                  {...field}
                   value={field.value || ""}
                 />
               </FormControl>
@@ -206,7 +177,7 @@ export default function JobForm({ onSuccess }: JobFormProps) {
                   </FormControl>
                   <SelectContent>
                     <SelectItem value="scheduled">Scheduled</SelectItem>
-                    <SelectItem value="in_progress">In Progress</SelectItem>
+                    <SelectItem value="in-progress">In Progress</SelectItem>
                     <SelectItem value="completed">Completed</SelectItem>
                     <SelectItem value="cancelled">Cancelled</SelectItem>
                   </SelectContent>
@@ -230,9 +201,9 @@ export default function JobForm({ onSuccess }: JobFormProps) {
                   </FormControl>
                   <SelectContent>
                     <SelectItem value="low">Low</SelectItem>
-                    <SelectItem value="normal">Normal</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
                     <SelectItem value="high">High</SelectItem>
-                    <SelectItem value="urgent">Urgent</SelectItem>
+                    <SelectItem value="emergency">Emergency</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -245,14 +216,15 @@ export default function JobForm({ onSuccess }: JobFormProps) {
             name="estimatedDuration"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Estimated Duration (minutes)</FormLabel>
+                <FormLabel>Estimated Hours</FormLabel>
                 <FormControl>
                   <Input 
-                    type="number" 
-                    placeholder="120" 
+                    type="number"
+                    step="0.5"
+                    placeholder="2.5"
                     {...field}
                     value={field.value || ""}
-                    onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                    onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
                   />
                 </FormControl>
                 <FormMessage />
@@ -265,70 +237,12 @@ export default function JobForm({ onSuccess }: JobFormProps) {
           control={form.control}
           name="scheduledDate"
           render={({ field }) => (
-            <FormItem className="flex flex-col">
-              <FormLabel>Scheduled Date & Time</FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-[240px] pl-3 text-left font-normal",
-                        !field.value && "text-muted-foreground"
-                      )}
-                    >
-                      {field.value ? (
-                        format(field.value, "PPP")
-                      ) : (
-                        <span>Pick a date</span>
-                      )}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={field.value ? new Date(field.value) : undefined}
-                    onSelect={field.onChange}
-                    disabled={(date) =>
-                      date < new Date() || date < new Date("1900-01-01")
-                    }
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="address"
-          render={({ field }) => (
             <FormItem>
-              <FormLabel>Job Address</FormLabel>
+              <FormLabel>Scheduled Date</FormLabel>
               <FormControl>
-                <Input placeholder="Job site address (if different from customer address)" {...field} value={field.value || ""} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="notes"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Notes</FormLabel>
-              <FormControl>
-                <Textarea 
-                  placeholder="Additional notes, special instructions, equipment needed..."
-                  className="min-h-[100px]"
-                  {...field} 
-                  value={field.value || ""}
+                <Input 
+                  type="datetime-local"
+                  {...field}
                 />
               </FormControl>
               <FormMessage />
@@ -349,7 +263,7 @@ export default function JobForm({ onSuccess }: JobFormProps) {
             type="submit" 
             disabled={isSubmitting}
           >
-            {isSubmitting ? "Creating..." : "Create Job"}
+            {isSubmitting ? "Creating..." : "Create Service Call"}
           </Button>
         </div>
       </form>

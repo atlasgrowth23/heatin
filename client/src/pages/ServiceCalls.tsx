@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Filter, Clock, User, MapPin } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Search, Filter, Clock, User, MapPin, Plus } from "lucide-react";
 import { format } from "date-fns";
-import type { Job, Customer, Technician } from "@shared/schema";
+import ServiceCallForm from "@/components/forms/ServiceCallForm";
+import type { Job, Customer } from "@shared/schema";
 
 export default function ServiceCalls() {
   const [searchTerm, setSearchTerm] = useState("");
