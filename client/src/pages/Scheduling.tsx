@@ -35,16 +35,11 @@ export default function Scheduling() {
     queryKey: ["/api/technicians"],
   });
 
-  // Route optimization mutation
-  const optimizeRoute = useMutation({
-    mutationFn: async (data: { technicianId: number; date: string }) => {
-      const response = await apiRequest("POST", "/api/routes/optimize", data);
-      return await response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
-    },
-  });
+  // Placeholder for route optimization
+  const optimizeRoute = {
+    mutate: () => {},
+    isPending: false
+  };
 
   // Initialize Google Maps
   useEffect(() => {
