@@ -14,6 +14,7 @@ import Invoicing from "@/pages/Invoicing";
 import Inventory from "@/pages/Inventory";
 import Technicians from "@/pages/Technicians";
 import Reports from "@/pages/Reports";
+import Settings from "@/pages/Settings";
 import Login from "@/pages/Login";
 import Landing from "@/pages/Landing";
 import NotFound from "@/pages/not-found";
@@ -48,6 +49,7 @@ function Router() {
             <Route path="/inventory" component={Inventory} />
             <Route path="/technicians" component={Technicians} />
             <Route path="/reports" component={Reports} />
+            <Route path="/settings" component={Settings} />
             <Route path="/" component={Dashboard} />
             <Route component={NotFound} />
           </Switch>

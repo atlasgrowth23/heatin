@@ -20,6 +20,7 @@ const getNavigation = (businessSlug: string | undefined) => [
   { name: "Inventory", href: businessSlug ? `/${businessSlug}/inventory` : "/inventory", icon: Package },
   { name: "Technicians", href: businessSlug ? `/${businessSlug}/technicians` : "/technicians", icon: HardHat },
   { name: "Reports", href: businessSlug ? `/${businessSlug}/reports` : "/reports", icon: TrendingUp },
+  { name: "Settings", href: businessSlug ? `/${businessSlug}/settings` : "/settings", icon: Settings },
 ];
 
 export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }: SidebarProps) {

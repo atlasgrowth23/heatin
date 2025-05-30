@@ -89,6 +89,126 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "Logged out" });
     });
   });
+
+  // User management routes
+  app.get("/api/users/company", async (req: any, res) => {
+    try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      // Get current user's company
+      const userRole = await db.select().from(userRoles).where(eq(userRoles.userId, userId)).limit(1);
+      if (userRole.length === 0) {
+        return res.status(403).json({ message: "User not associated with any company" });
+      }
+      
+      const companyId = userRole[0].companyId;
+      
+      // Get all users in the same company
+      const companyUsers = await db.select({
+        id: users.id,
+        username: users.username,
+        name: users.name,
+        email: users.email,
+        role: users.role,
+        createdAt: users.createdAt
+      })
+      .from(users)
+      .innerJoin(userRoles, eq(users.id, userRoles.userId))
+      .where(eq(userRoles.companyId, companyId));
+      
+      res.json(companyUsers);
+    } catch (error) {
+      console.error('Error fetching company users:', error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  app.post("/api/users", async (req: any, res) => {
+    try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      // Get current user's company
+      const userRole = await db.select().from(userRoles).where(eq(userRoles.userId, userId)).limit(1);
+      if (userRole.length === 0) {
+        return res.status(403).json({ message: "User not associated with any company" });
+      }
+      
+      const companyId = userRole[0].companyId;
+      
+      // Create new user
+      const newUserData = {
+        username: req.body.username,
+        name: req.body.name,
+        email: req.body.email || null,
+        password: req.body.password, // Should be hashed in production
+        role: req.body.role || 'technician'
+      };
+      
+      const [newUser] = await db.insert(users).values(newUserData).returning();
+      
+      // Create user role association
+      await db.insert(userRoles).values({
+        userId: newUser.id,
+        companyId: companyId,
+        role: req.body.role || 'technician'
+      });
+      
+      res.status(201).json(newUser);
+    } catch (error) {
+      console.error('Error creating user:', error);
+      res.status(500).json({ message: "Failed to create user" });
+    }
+  });
+
+  app.delete("/api/users/:id", async (req: any, res) => {
+    try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const targetUserId = parseInt(req.params.id);
+      
+      // Prevent self-deletion
+      if (userId === targetUserId) {
+        return res.status(400).json({ message: "Cannot delete your own account" });
+      }
+      
+      // Get current user's company
+      const userRole = await db.select().from(userRoles).where(eq(userRoles.userId, userId)).limit(1);
+      if (userRole.length === 0) {
+        return res.status(403).json({ message: "User not associated with any company" });
+      }
+      
+      const companyId = userRole[0].companyId;
+      
+      // Verify target user is in same company
+      const targetUserRole = await db.select().from(userRoles).where(
+        eq(userRoles.userId, targetUserId)
+      ).limit(1);
+      
+      if (targetUserRole.length === 0 || targetUserRole[0].companyId !== companyId) {
+        return res.status(403).json({ message: "Cannot delete user from different company" });
+      }
+      
+      // Delete user role first
+      await db.delete(userRoles).where(eq(userRoles.userId, targetUserId));
+      
+      // Delete user
+      await db.delete(users).where(eq(users.id, targetUserId));
+      
+      res.json({ message: "User deleted successfully" });
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      res.status(500).json({ message: "Failed to delete user" });
+    }
+  });
   
   // Customers - filter by user's company
   app.get("/api/customers", isAuthenticated, async (req: any, res) => {
