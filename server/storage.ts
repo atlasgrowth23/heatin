@@ -1,10 +1,13 @@
-import { eq, and, gte, lte } from "drizzle-orm";
+import { eq, and, gte, lte, like } from "drizzle-orm";
 import { db } from "./db";
 import { 
   users, customers, technicians, jobs, invoices, invoiceItems, inventory, equipment, companies, userRoles,
+  globalPricebook, companyPricebook,
   type User, type Customer, type Technician, type Job, type Invoice, type InvoiceItem, 
-  type Inventory, type Equipment, type InsertUser, type InsertCustomer, type InsertTechnician,
-  type InsertJob, type InsertInvoice, type InsertInvoiceItem, type InsertInventory, type InsertEquipment
+  type Inventory, type Equipment, type GlobalPricebook, type CompanyPricebook,
+  type InsertUser, type InsertCustomer, type InsertTechnician,
+  type InsertJob, type InsertInvoice, type InsertInvoiceItem, type InsertInventory, type InsertEquipment,
+  type InsertGlobalPricebook, type InsertCompanyPricebook
 } from "@shared/schema";
 
 export interface IStorage {
@@ -74,6 +77,22 @@ export interface IStorage {
   updateEquipmentItem(id: number, equipment: Partial<InsertEquipment>): Promise<Equipment | undefined>;
   deleteEquipmentItem(id: number): Promise<boolean>;
   getEquipmentNeedingService(): Promise<Equipment[]>;
+  
+  // Price Books
+  getGlobalPricebook(): Promise<GlobalPricebook[]>;
+  getGlobalPricebookByCategory(category: string): Promise<GlobalPricebook[]>;
+  getGlobalPricebookItem(id: number): Promise<GlobalPricebook | undefined>;
+  createGlobalPricebookItem(item: InsertGlobalPricebook): Promise<GlobalPricebook>;
+  updateGlobalPricebookItem(id: number, item: Partial<InsertGlobalPricebook>): Promise<GlobalPricebook | undefined>;
+  deleteGlobalPricebookItem(id: number): Promise<boolean>;
+  
+  getCompanyPricebook(companyId: number): Promise<CompanyPricebook[]>;
+  getCompanyPricebookByCategory(companyId: number, category: string): Promise<CompanyPricebook[]>;
+  getCompanyPricebookItem(id: number): Promise<CompanyPricebook | undefined>;
+  createCompanyPricebookItem(item: InsertCompanyPricebook): Promise<CompanyPricebook>;
+  updateCompanyPricebookItem(id: number, item: Partial<InsertCompanyPricebook>): Promise<CompanyPricebook | undefined>;
+  deleteCompanyPricebookItem(id: number): Promise<boolean>;
+  copyGlobalToCompanyPricebook(companyId: number): Promise<CompanyPricebook[]>;
 }
 
 export class DatabaseStorage implements IStorage {
