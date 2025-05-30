@@ -15,13 +15,19 @@ export default function Technicians() {
   const [searchTerm, setSearchTerm] = useState("");
   const { currentBusiness, getApiUrl, isValidTenant } = useTenant();
 
+  console.log("Tenant API URL:", getApiUrl("/technicians"));
+  
   const { data: technicians = [], isLoading } = useQuery<Technician[]>({
     queryKey: [getApiUrl("/technicians"), currentBusiness?.id],
     enabled: isValidTenant,
     queryFn: async () => {
-      const response = await fetch(getApiUrl("/technicians"), { credentials: "include" });
+      const url = getApiUrl("/technicians");
+      console.log("Fetching from:", url);
+      const response = await fetch(url, { credentials: "include" });
       if (!response.ok) throw new Error("Failed to fetch technicians");
-      return response.json();
+      const data = await response.json();
+      console.log("Technicians data:", data);
+      return data;
     },
   });
 
