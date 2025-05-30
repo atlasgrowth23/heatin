@@ -18,14 +18,11 @@ export default function Customers() {
   const [searchTerm, setSearchTerm] = useState("");
   const { currentBusiness } = useBusiness();
 
-  const { data: allCustomers = [], isLoading } = useQuery<Customer[]>({
-    queryKey: ["/api/customers"],
+  const { data: customers = [], isLoading } = useQuery<Customer[]>({
+    queryKey: ["/api/customers", currentBusiness?.id],
+    enabled: !!currentBusiness?.id,
+    select: (data) => data.filter(customer => customer.companyId === currentBusiness?.id),
   });
-
-  // Filter customers by current business
-  const customers = allCustomers.filter(customer => 
-    customer.companyId === currentBusiness?.id
-  );
 
   const filteredCustomers = customers.filter(customer => {
     const searchLower = searchTerm.toLowerCase();

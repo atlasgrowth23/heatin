@@ -15,14 +15,11 @@ export default function Technicians() {
   const [searchTerm, setSearchTerm] = useState("");
   const { currentBusiness } = useBusiness();
 
-  const { data: allTechnicians = [], isLoading } = useQuery<Technician[]>({
-    queryKey: ["/api/technicians"],
+  const { data: technicians = [], isLoading } = useQuery<Technician[]>({
+    queryKey: ["/api/technicians", currentBusiness?.id],
+    enabled: !!currentBusiness?.id,
+    select: (data) => data.filter(tech => tech.companyId === currentBusiness?.id),
   });
-
-  // Filter technicians by current business
-  const technicians = allTechnicians.filter(tech => 
-    tech.companyId === currentBusiness?.id
-  );
 
   const filteredTechnicians = technicians.filter(tech =>
     tech.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

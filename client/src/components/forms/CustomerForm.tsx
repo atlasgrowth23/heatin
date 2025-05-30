@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useBusiness } from "@/hooks/useBusiness";
 
 interface CustomerFormProps {
   onSuccess?: () => void;
