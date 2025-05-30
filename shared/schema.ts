@@ -13,6 +13,20 @@ export const sessions = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
+// Companies table for multi-tenant support
+export const companies = pgTable("companies", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  address: text("address"),
+  city: text("city"),
+  state: text("state"),
+  zipCode: text("zip_code"),
+  phone: text("phone"),
+  email: text("email"),
+  settings: jsonb("settings").default({}),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
@@ -23,8 +37,18 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// User roles for multi-tenant access control
+export const userRoles = pgTable("user_roles", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  companyId: integer("company_id").references(() => companies.id).notNull(),
+  role: text("role").notNull(), // owner, admin, technician
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const customers = pgTable("customers", {
   id: serial("id").primaryKey(),
+  companyId: integer("company_id").references(() => companies.id).notNull(),
   userId: integer("user_id").references(() => users.id),
   name: text("name").notNull(),
   email: text("email"),
@@ -33,12 +57,15 @@ export const customers = pgTable("customers", {
   city: text("city"),
   state: text("state"),
   zipCode: text("zip_code"),
+  latitude: decimal("latitude", { precision: 10, scale: 8 }),
+  longitude: decimal("longitude", { precision: 11, scale: 8 }),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const technicians = pgTable("technicians", {
   id: serial("id").primaryKey(),
+  companyId: integer("company_id").references(() => companies.id).notNull(),
   userId: integer("user_id").references(() => users.id),
   name: text("name").notNull(),
   email: text("email"),
@@ -113,21 +140,32 @@ export const equipment = pgTable("equipment", {
   notes: text("notes"),
 });
 
-export const services = pgTable("services", {
+// Technician locations for real-time tracking
+export const technicianLocations = pgTable("technician_locations", {
   id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  category: text("category").notNull(), // AC Repair, AC Installation, etc.
-  description: text("description"),
-  basePrice: decimal("base_price", { precision: 10, scale: 2 }),
-  estimatedDuration: integer("estimated_duration"), // in minutes
-  equipmentNeeded: text("equipment_needed").array().default([]),
-  partsNeeded: text("parts_needed").array().default([]),
-  isActive: boolean("is_active").default(true),
+  technicianId: integer("technician_id").references(() => technicians.id).notNull(),
+  jobId: integer("job_id").references(() => jobs.id),
+  latitude: decimal("latitude", { precision: 10, scale: 8 }).notNull(),
+  longitude: decimal("longitude", { precision: 11, scale: 8 }).notNull(),
+  timestamp: timestamp("timestamp").defaultNow(),
+});
+
+// Daily routes for optimization
+export const jobRoutes = pgTable("job_routes", {
+  id: serial("id").primaryKey(),
+  technicianId: integer("technician_id").references(() => technicians.id).notNull(),
+  date: timestamp("date").notNull(),
+  waypoints: jsonb("waypoints").default([]), // Array of job locations in order
+  estimatedTimes: jsonb("estimated_times").default({}), // Travel times between jobs
+  totalDistance: decimal("total_distance", { precision: 10, scale: 2 }),
+  totalDuration: integer("total_duration"), // in minutes
   createdAt: timestamp("created_at").defaultNow(),
 });
 
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({ id: true });
+export const insertCompanySchema = createInsertSchema(companies).omit({ id: true, createdAt: true });
+export const insertUserRoleSchema = createInsertSchema(userRoles).omit({ id: true, createdAt: true });
 export const insertCustomerSchema = createInsertSchema(customers).omit({ id: true, createdAt: true });
 export const insertTechnicianSchema = createInsertSchema(technicians).omit({ id: true });
 export const insertJobSchema = createInsertSchema(jobs).omit({ id: true, createdAt: true }).extend({
@@ -146,7 +184,8 @@ export const insertInvoiceSchema = createInsertSchema(invoices).omit({ id: true,
 export const insertInvoiceItemSchema = createInsertSchema(invoiceItems).omit({ id: true });
 export const insertInventorySchema = createInsertSchema(inventory).omit({ id: true });
 export const insertEquipmentSchema = createInsertSchema(equipment).omit({ id: true });
-export const insertServiceSchema = createInsertSchema(services).omit({ id: true, createdAt: true });
+export const insertTechnicianLocationSchema = createInsertSchema(technicianLocations).omit({ id: true, timestamp: true });
+export const insertJobRouteSchema = createInsertSchema(jobRoutes).omit({ id: true, createdAt: true });
 
 // Types
 export type User = typeof users.$inferSelect;
