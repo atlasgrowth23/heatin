@@ -98,17 +98,17 @@ export default function Customers() {
                             <h3 className="font-semibold text-slate-900 group-hover:text-blue-600 text-xl mb-3">
                               {customer.name}
                             </h3>
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                            <div className="space-y-2">
                               {customer.phone && (
                                 <div className="flex items-center text-sm text-slate-600">
-                                  <Phone className="w-4 h-4 mr-2 flex-shrink-0" />
-                                  <span className="truncate">{customer.phone}</span>
+                                  <Phone className="w-4 h-4 mr-3 flex-shrink-0" />
+                                  <span>{customer.phone}</span>
                                 </div>
                               )}
                               {customer.email && (
                                 <div className="flex items-center text-sm text-slate-600">
-                                  <Mail className="w-4 h-4 mr-2 flex-shrink-0" />
-                                  <span className="truncate">{customer.email}</span>
+                                  <Mail className="w-4 h-4 mr-3 flex-shrink-0" />
+                                  <span>{customer.email}</span>
                                 </div>
                               )}
                             </div>
