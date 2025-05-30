@@ -18,7 +18,7 @@ const getNavigation = (businessSlug: string | undefined) => [
   { name: "Service Calls", href: businessSlug ? `/${businessSlug}/service-calls` : "/service-calls", icon: ClipboardList },
   { name: "Invoicing", href: businessSlug ? `/${businessSlug}/invoicing` : "/invoicing", icon: FileText },
   { name: "Inventory", href: businessSlug ? `/${businessSlug}/inventory` : "/inventory", icon: Package },
-  { name: "Technicians", href: businessSlug ? `/${businessSlug}/technicians` : "/technicians", icon: HardHat },
+
   { name: "Reports", href: businessSlug ? `/${businessSlug}/reports` : "/reports", icon: TrendingUp },
   { name: "Settings", href: businessSlug ? `/${businessSlug}/settings` : "/settings", icon: Settings },
 ];

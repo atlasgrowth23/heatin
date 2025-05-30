@@ -47,7 +47,7 @@ function Router() {
             <Route path="/service-calls" component={ServiceCalls} />
             <Route path="/invoicing" component={Invoicing} />
             <Route path="/inventory" component={Inventory} />
-            <Route path="/technicians" component={Technicians} />
+
             <Route path="/reports" component={Reports} />
             <Route path="/settings" component={Settings} />
             <Route path="/" component={Dashboard} />
