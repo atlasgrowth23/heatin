@@ -42,7 +42,7 @@ export default function Scheduling() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/routes"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
     },
   });
 

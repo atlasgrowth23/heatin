@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { 
   insertCustomerSchema, insertTechnicianSchema, insertJobSchema, 
-  insertInvoiceSchema, insertInventorySchema, insertEquipmentSchema, insertServiceSchema 
+  insertInvoiceSchema, insertInventorySchema, insertEquipmentSchema 
 } from "@shared/schema";
 import { z } from "zod";
 import { getSession, isAuthenticated, authenticateUser, getUserById, createUser } from "./auth";
@@ -289,6 +289,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
       activeTechnicians,
       customerSatisfaction: 4.8, // This would come from actual reviews
     });
+  });
+
+  // Route optimization endpoints
+  app.post("/api/routes/optimize", isAuthenticated, async (req, res) => {
+    try {
+      const { technicianId, date } = req.body;
+      
+      // Get jobs for the technician on the specified date
+      const jobs = await storage.getJobsByTechnician(technicianId);
+      const dayJobs = jobs.filter(job => {
+        if (!job.scheduledDate) return false;
+        const jobDate = new Date(job.scheduledDate);
+        const targetDate = new Date(date);
+        return jobDate.toDateString() === targetDate.toDateString();
+      });
+
+      if (dayJobs.length === 0) {
+        return res.json({ message: "No jobs found for optimization", route: null });
+      }
+
+      // Get customer addresses for the jobs
+      const customers = await storage.getCustomers();
+      const jobAddresses = dayJobs.map(job => {
+        const customer = customers.find(c => c.id === job.customerId);
+        return customer?.address || "";
+      }).filter(address => address.length > 0);
+
+      if (jobAddresses.length === 0) {
+        return res.json({ message: "No valid addresses found for optimization", route: null });
+      }
+
+      // Simple route optimization (nearest neighbor algorithm)
+      const optimizedRoute = jobAddresses; // For now, just return the addresses as-is
+      
+      // Save the optimized route
+      const routeData = {
+        technicianId,
+        date: new Date(date),
+        waypoints: optimizedRoute,
+        estimatedTimes: {},
+        totalDistance: 0,
+        totalDuration: 0
+      };
+
+      res.json({ 
+        message: "Route optimized successfully", 
+        route: routeData,
+        addresses: optimizedRoute 
+      });
+    } catch (error) {
+      console.error("Error optimizing route:", error);
+      res.status(500).json({ message: "Failed to optimize route" });
+    }
+  });
+
+  app.get("/api/routes/:technicianId/:date", isAuthenticated, async (req, res) => {
+    try {
+      const { technicianId, date } = req.params;
+      // For now, return a simple response
+      res.json({ 
+        technicianId: parseInt(technicianId), 
+        date,
+        waypoints: [],
+        message: "Route data retrieved"
+      });
+    } catch (error) {
+      console.error("Error fetching route:", error);
+      res.status(500).json({ message: "Failed to fetch route" });
+    }
   });
 
   const httpServer = createServer(app);

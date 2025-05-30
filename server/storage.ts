@@ -1,10 +1,10 @@
 import { eq, and, gte, lte } from "drizzle-orm";
 import { db } from "./db";
 import { 
-  users, customers, technicians, jobs, invoices, invoiceItems, inventory, equipment, services,
+  users, customers, technicians, jobs, invoices, invoiceItems, inventory, equipment,
   type User, type Customer, type Technician, type Job, type Invoice, type InvoiceItem, 
-  type Inventory, type Equipment, type Service, type InsertUser, type InsertCustomer, type InsertTechnician,
-  type InsertJob, type InsertInvoice, type InsertInvoiceItem, type InsertInventory, type InsertEquipment, type InsertService
+  type Inventory, type Equipment, type InsertUser, type InsertCustomer, type InsertTechnician,
+  type InsertJob, type InsertInvoice, type InsertInvoiceItem, type InsertInventory, type InsertEquipment
 } from "@shared/schema";
 
 export interface IStorage {
@@ -67,14 +67,6 @@ export interface IStorage {
   updateEquipmentItem(id: number, equipment: Partial<InsertEquipment>): Promise<Equipment | undefined>;
   deleteEquipmentItem(id: number): Promise<boolean>;
   getEquipmentNeedingService(): Promise<Equipment[]>;
-  
-  // Services
-  getServices(): Promise<Service[]>;
-  getService(id: number): Promise<Service | undefined>;
-  getServicesByCategory(category: string): Promise<Service[]>;
-  createService(service: InsertService): Promise<Service>;
-  updateService(id: number, service: Partial<InsertService>): Promise<Service | undefined>;
-  deleteService(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
