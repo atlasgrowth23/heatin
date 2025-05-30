@@ -60,12 +60,13 @@ export default function Scheduling() {
   }, [mapView]);
 
   const initializeMap = () => {
-    if (!mapRef.current || !window.google) return;
+    if (!mapRef.current || !(window as any).google) return;
 
-    mapInstanceRef.current = new window.google.maps.Map(mapRef.current, {
+    const google = (window as any).google;
+    mapInstanceRef.current = new google.maps.Map(mapRef.current, {
       zoom: 10,
       center: { lat: 39.8283, lng: -98.5795 }, // Center of US
-      mapTypeId: window.google.maps.MapTypeId.ROADMAP,
+      mapTypeId: google.maps.MapTypeId.ROADMAP,
     });
 
     // Add markers for today's jobs
@@ -73,10 +74,10 @@ export default function Scheduling() {
     todaysJobs.forEach((job) => {
       const customer = customers.find(c => c.id === job.customerId);
       if (customer && customer.latitude && customer.longitude) {
-        new window.google.maps.Marker({
+        new google.maps.Marker({
           position: { lat: customer.latitude, lng: customer.longitude },
           map: mapInstanceRef.current,
-          title: `${customer.name} - ${job.description}`,
+          title: `${customer.name} - ${job.title}`,
         });
       }
     });
@@ -237,7 +238,6 @@ export default function Scheduling() {
 
       {/* Conditional View: Schedule or Map */}
       {mapView === "schedule" ? (
-        /* Week Calendar Grid */
         <div className="grid grid-cols-1 lg:grid-cols-7 gap-4">
         {weekDays.map((day) => {
           const dayJobs = getJobsForDate(day);
@@ -304,45 +304,110 @@ export default function Scheduling() {
             </Card>
           );
         })}
-      </div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <Card>
+            <CardContent className="p-0">
+              <div 
+                ref={mapRef} 
+                className="w-full h-96 rounded-lg"
+                style={{ minHeight: "400px" }}
+              />
+            </CardContent>
+          </Card>
+          
+          {/* Jobs List for Selected Date */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Jobs for {format(selectedDate, "MMMM d, yyyy")}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {getJobsForDate(selectedDate)
+                  .filter(job => selectedTechnician === "all" || job.technicianId?.toString() === selectedTechnician)
+                  .map((job) => (
+                  <div key={job.id} className={`p-4 border-l-4 rounded-lg bg-white ${getPriorityColor(job.priority)}`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <Badge className={getStatusColor(job.status)}>
+                            {job.status}
+                          </Badge>
+                          <span className="text-sm font-medium">{getCustomerName(job.customerId)}</span>
+                        </div>
+                        <p className="text-sm text-slate-600">{job.title}</p>
+                        <div className="flex items-center space-x-4 text-xs text-slate-500 mt-2">
+                          <div className="flex items-center">
+                            <Clock className="w-3 h-3 mr-1" />
+                            {job.scheduledDate ? format(new Date(job.scheduledDate), "h:mm a") : "No time"}
+                          </div>
+                          <div className="flex items-center">
+                            <User className="w-3 h-3 mr-1" />
+                            {getTechnicianName(job.technicianId)}
+                          </div>
+                          {job.address && (
+                            <div className="flex items-center">
+                              <MapPin className="w-3 h-3 mr-1" />
+                              <span>{job.address}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Button variant="outline" size="sm">
+                          <Navigation className="w-4 h-4 mr-1" />
+                          Navigate
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
-      {/* Today's Jobs Summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Today's Jobs Summary</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">
-                {getJobsForDate(new Date()).filter(j => j.status === "scheduled").length}
+      {/* Today's Jobs Summary - Only show in schedule view */}
+      {mapView === "schedule" && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Today's Jobs Summary</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="text-center p-4 bg-blue-50 rounded-lg">
+                <div className="text-2xl font-bold text-blue-600">
+                  {getJobsForDate(new Date()).filter(j => j.status === "scheduled").length}
+                </div>
+                <div className="text-sm text-blue-600">Scheduled</div>
               </div>
-              <div className="text-sm text-blue-600">Scheduled</div>
-            </div>
-            
-            <div className="text-center p-4 bg-yellow-50 rounded-lg">
-              <div className="text-2xl font-bold text-yellow-600">
-                {getJobsForDate(new Date()).filter(j => j.status === "in_progress").length}
+              
+              <div className="text-center p-4 bg-yellow-50 rounded-lg">
+                <div className="text-2xl font-bold text-yellow-600">
+                  {getJobsForDate(new Date()).filter(j => j.status === "in_progress").length}
+                </div>
+                <div className="text-sm text-yellow-600">In Progress</div>
               </div>
-              <div className="text-sm text-yellow-600">In Progress</div>
-            </div>
-            
-            <div className="text-center p-4 bg-green-50 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">
-                {getJobsForDate(new Date()).filter(j => j.status === "completed").length}
+              
+              <div className="text-center p-4 bg-green-50 rounded-lg">
+                <div className="text-2xl font-bold text-green-600">
+                  {getJobsForDate(new Date()).filter(j => j.status === "completed").length}
+                </div>
+                <div className="text-sm text-green-600">Completed</div>
               </div>
-              <div className="text-sm text-green-600">Completed</div>
-            </div>
-            
-            <div className="text-center p-4 bg-red-50 rounded-lg">
-              <div className="text-2xl font-bold text-red-600">
-                {getJobsForDate(new Date()).filter(j => j.priority === "urgent").length}
+              
+              <div className="text-center p-4 bg-red-50 rounded-lg">
+                <div className="text-2xl font-bold text-red-600">
+                  {getJobsForDate(new Date()).filter(j => j.priority === "urgent").length}
+                </div>
+                <div className="text-sm text-red-600">Urgent</div>
               </div>
-              <div className="text-sm text-red-600">Urgent</div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
