@@ -17,6 +17,7 @@ export const sessions = pgTable(
 export const companies = pgTable("companies", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
   address: text("address"),
   city: text("city"),
   state: text("state"),

@@ -7,9 +7,12 @@ import {
   AlertTriangle, Wrench, Clock, ExternalLink 
 } from "lucide-react";
 import { format } from "date-fns";
+import { useTenant } from "@/hooks/useTenant";
 import type { Job, Customer, Technician } from "@shared/schema";
 
 export default function Dashboard() {
+  const { getApiUrl, isValidTenant } = useTenant();
+
   const { data: stats = {
     activeJobs: 0,
     monthlyRevenue: 0,
@@ -24,11 +27,23 @@ export default function Dashboard() {
   });
 
   const { data: customers = [] } = useQuery<Customer[]>({
-    queryKey: ["/api/customers"],
+    queryKey: [getApiUrl("/customers")],
+    enabled: isValidTenant,
+    queryFn: async () => {
+      const response = await fetch(getApiUrl("/customers"), { credentials: "include" });
+      if (!response.ok) throw new Error("Failed to fetch customers");
+      return response.json();
+    },
   });
 
   const { data: technicians = [] } = useQuery<Technician[]>({
-    queryKey: ["/api/technicians"],
+    queryKey: [getApiUrl("/technicians")],
+    enabled: isValidTenant,
+    queryFn: async () => {
+      const response = await fetch(getApiUrl("/technicians"), { credentials: "include" });
+      if (!response.ok) throw new Error("Failed to fetch technicians");
+      return response.json();
+    },
   });
 
   const getCustomerName = (customerId: number) => {
