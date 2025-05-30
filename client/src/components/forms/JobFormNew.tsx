@@ -45,6 +45,8 @@ export default function JobFormNew({ onSuccess }: JobFormNewProps) {
   const [customerType, setCustomerType] = useState<"standard" | "membership" | "after_hours">("standard");
   const [showServiceSelector, setShowServiceSelector] = useState(false);
   const [showServicePreview, setShowServicePreview] = useState(false);
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [showCustomerResults, setShowCustomerResults] = useState(false);
 
   // Data queries
   const { data: customers = [] } = useQuery<Customer[]>({
@@ -64,6 +66,13 @@ export default function JobFormNew({ onSuccess }: JobFormNewProps) {
     service.taskName.toLowerCase().includes(serviceSearch.toLowerCase()) ||
     service.category.toLowerCase().includes(serviceSearch.toLowerCase()) ||
     service.sku.toLowerCase().includes(serviceSearch.toLowerCase())
+  );
+
+  // Filter customers based on search
+  const filteredCustomers = customers.filter(customer =>
+    customer.name.toLowerCase().includes(customerSearch.toLowerCase()) ||
+    (customer.phone && customer.phone.includes(customerSearch)) ||
+    (customer.address && customer.address.toLowerCase().includes(customerSearch.toLowerCase()))
   );
 
   // Group services by category
@@ -179,6 +188,8 @@ export default function JobFormNew({ onSuccess }: JobFormNewProps) {
     setServiceSearch("");
     setCustomerType("standard");
     setShowServiceSelector(false);
+    setCustomerSearch("");
+    setShowCustomerResults(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -221,18 +232,40 @@ export default function JobFormNew({ onSuccess }: JobFormNewProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="customer">Customer *</Label>
-          <Select value={customerId} onValueChange={setCustomerId}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select customer" />
-            </SelectTrigger>
-            <SelectContent>
-              {customers.map((customer) => (
-                <SelectItem key={customer.id} value={customer.id.toString()}>
-                  {customer.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="relative">
+            <Input
+              placeholder="Search customers by name..."
+              value={customerSearch}
+              onChange={(e) => setCustomerSearch(e.target.value)}
+              className="pr-10"
+            />
+            <User className="absolute right-3 top-3 h-4 w-4 text-slate-400" />
+            
+            {/* Customer Search Results */}
+            {customerSearch && filteredCustomers.length > 0 && (
+              <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                {filteredCustomers.slice(0, 5).map((customer) => (
+                  <div
+                    key={customer.id}
+                    className="p-3 hover:bg-slate-50 cursor-pointer border-b last:border-b-0"
+                    onClick={() => {
+                      setCustomerId(customer.id.toString());
+                      setCustomerSearch(customer.name);
+                      setShowCustomerResults(false);
+                    }}
+                  >
+                    <div className="font-medium">{customer.name}</div>
+                    {customer.phone && (
+                      <div className="text-sm text-slate-500">{customer.phone}</div>
+                    )}
+                    {customer.address && (
+                      <div className="text-xs text-slate-400">{customer.address}</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="space-y-2">

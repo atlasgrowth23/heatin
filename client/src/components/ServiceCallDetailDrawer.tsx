@@ -46,13 +46,10 @@ export default function ServiceCallDetailDrawer({
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  if (!job) return null;
-
-  const customer = customers.find(c => c.id === job.customerId);
-
   // Update job mutation
   const updateJobMutation = useMutation({
     mutationFn: async (updates: any) => {
+      if (!job?.id) throw new Error("No job ID");
       const response = await fetch(`/api/jobs/${job.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -67,6 +64,17 @@ export default function ServiceCallDetailDrawer({
       toast({ title: "Success", description: "Service call updated" });
     },
   });
+
+  // Early return with proper JSX
+  if (!job) {
+    return (
+      <Sheet open={false} onOpenChange={onClose}>
+        <SheetContent />
+      </Sheet>
+    );
+  }
+
+  const customer = customers.find(c => c.id === job.customerId);
 
   const handleStatusChange = (newStatus: string) => {
     updateJobMutation.mutate({ status: newStatus });
