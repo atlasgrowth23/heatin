@@ -30,10 +30,8 @@ export default function BusinessSelection() {
   }, []);
 
   const handleBusinessSelect = (business: Business) => {
-    // Store selected business in localStorage for the session
-    localStorage.setItem("selectedBusiness", JSON.stringify(business));
-    // Redirect to login with business context
-    setLocation(`/login?business=${business.slug}`);
+    // Redirect to the business dashboard
+    setLocation(`/${business.slug}`);
   };
 
   if (loading) {

@@ -1,5 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
+import { useTenant } from "@/hooks/useTenant";
 import { 
   BarChart3, Users, Calendar, ClipboardList, 
   FileText, Package, HardHat, TrendingUp, Wrench, Settings 
@@ -10,15 +11,15 @@ interface SidebarProps {
   setIsMobileMenuOpen: (open: boolean) => void;
 }
 
-const navigation = [
-  { name: "Dashboard", href: "/", icon: BarChart3 },
-  { name: "Customers", href: "/customers", icon: Users },
-  { name: "Scheduling", href: "/scheduling", icon: Calendar },
-  { name: "Service Calls", href: "/service-calls", icon: ClipboardList },
-  { name: "Invoicing", href: "/invoicing", icon: FileText },
-  { name: "Inventory", href: "/inventory", icon: Package },
-  { name: "Technicians", href: "/technicians", icon: HardHat },
-  { name: "Reports", href: "/reports", icon: TrendingUp },
+const getNavigation = (businessSlug: string | undefined) => [
+  { name: "Dashboard", href: businessSlug ? `/${businessSlug}` : "/", icon: BarChart3 },
+  { name: "Customers", href: businessSlug ? `/${businessSlug}/customers` : "/customers", icon: Users },
+  { name: "Scheduling", href: businessSlug ? `/${businessSlug}/scheduling` : "/scheduling", icon: Calendar },
+  { name: "Service Calls", href: businessSlug ? `/${businessSlug}/service-calls` : "/service-calls", icon: ClipboardList },
+  { name: "Invoicing", href: businessSlug ? `/${businessSlug}/invoicing` : "/invoicing", icon: FileText },
+  { name: "Inventory", href: businessSlug ? `/${businessSlug}/inventory` : "/inventory", icon: Package },
+  { name: "Technicians", href: businessSlug ? `/${businessSlug}/technicians` : "/technicians", icon: HardHat },
+  { name: "Reports", href: businessSlug ? `/${businessSlug}/reports` : "/reports", icon: TrendingUp },
 ];
 
 export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }: SidebarProps) {

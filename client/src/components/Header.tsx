@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Menu, Search, Bell, Plus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import JobForm from "./forms/JobFormNew";
-import BusinessSelector from "./BusinessSelector";
+import { useTenant } from "@/hooks/useTenant";
 
 interface HeaderProps {
   onMobileMenuToggle: () => void;
@@ -12,6 +12,7 @@ interface HeaderProps {
 
 export default function Header({ onMobileMenuToggle }: HeaderProps) {
   const [isJobDialogOpen, setIsJobDialogOpen] = useState(false);
+  const { currentBusiness } = useTenant();
 
   return (
     <header className="bg-white border-b border-slate-200 px-6 py-4">
@@ -25,8 +26,9 @@ export default function Header({ onMobileMenuToggle }: HeaderProps) {
           >
             <Menu className="h-5 w-5" />
           </Button>
-          <h1 className="text-2xl font-bold text-slate-800">Dashboard</h1>
-          <BusinessSelector />
+          <h1 className="text-2xl font-bold text-slate-800">
+            {currentBusiness ? currentBusiness.name : "Dashboard"}
+          </h1>
         </div>
         
         <div className="flex items-center space-x-4">

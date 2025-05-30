@@ -48,7 +48,7 @@ export default function CustomerForm({ onSuccess }: CustomerFormProps) {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
+      queryClient.invalidateQueries({ queryKey: [getApiUrl("/customers")] });
       toast({
         title: "Success", 
         description: "Customer created successfully",
