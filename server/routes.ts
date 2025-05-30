@@ -70,10 +70,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
   
-  // Customers - temporarily remove company filtering until tenant system is ready
+  // Customers - filter by user's company
   app.get("/api/customers", isAuthenticated, async (req: any, res) => {
     try {
-      const customers = await storage.getCustomers();
+      const userId = req.user.id;
+      const companyId = await storage.getUserCompanyId(userId);
+      if (!companyId) {
+        return res.status(403).json({ message: "User not associated with any company" });
+      }
+      
+      const customers = await storage.getCustomers(companyId);
       res.json(customers);
     } catch (error) {
       console.error("Error fetching customers:", error);

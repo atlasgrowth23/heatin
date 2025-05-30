@@ -16,16 +16,9 @@ import type { Customer } from "@shared/schema";
 export default function Customers() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const { currentBusiness, getApiUrl, isValidTenant } = useTenant();
-
-  const { data: allCustomers = [], isLoading } = useQuery<Customer[]>({
+  const { data: customers = [], isLoading } = useQuery<Customer[]>({
     queryKey: ["/api/customers"],
   });
-
-  // Filter customers by current business
-  const customers = currentBusiness 
-    ? allCustomers.filter(customer => customer.companyId === currentBusiness.id)
-    : [];
 
   const filteredCustomers = customers.filter(customer => {
     const searchLower = searchTerm.toLowerCase();
