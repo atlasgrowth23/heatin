@@ -6,8 +6,68 @@ import {
   insertInvoiceSchema, insertInventorySchema, insertEquipmentSchema 
 } from "@shared/schema";
 import { z } from "zod";
+import { getSession, isAuthenticated, authenticateUser, getUserById, createUser } from "./auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Session middleware
+  app.use(getSession());
+
+  // Create demo user on startup
+  try {
+    await createUser({
+      username: "demo",
+      password: "demo123",
+      name: "Demo User",
+      email: "demo@hvac.com",
+      role: "admin"
+    });
+    console.log("Demo user created: username=demo, password=demo123");
+  } catch (error) {
+    // User might already exist, that's fine
+  }
+
+  // Authentication routes
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      const user = await authenticateUser(username, password);
+      
+      if (!user) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      (req.session as any).userId = user.id;
+      res.json({ id: user.id, username: user.username, name: user.name, email: user.email, role: user.role });
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.get("/api/auth/me", async (req, res) => {
+    try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const user = await getUserById(userId);
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+
+      res.json({ id: user.id, username: user.username, name: user.name, email: user.email, role: user.role });
+    } catch (error) {
+      console.error("Auth check error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/auth/logout", (req, res) => {
+    req.session.destroy(() => {
+      res.json({ message: "Logged out" });
+    });
+  });
   
   // Customers
   app.get("/api/customers", async (req, res) => {
