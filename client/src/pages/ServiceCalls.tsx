@@ -11,6 +11,7 @@ import { Search, Filter, Clock, User, MapPin, Plus, Play, Pause, CheckCircle, Ed
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import JobFormNew from "@/components/forms/JobFormNew";
+import ServiceCallDetailDrawer from "@/components/ServiceCallDetailDrawer";
 import type { Job, Customer } from "@shared/schema";
 
 export default function ServiceCalls() {
@@ -19,6 +20,7 @@ export default function ServiceCalls() {
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -235,7 +237,8 @@ export default function ServiceCalls() {
               {filteredJobs.map((job) => (
                 <div
                   key={job.id}
-                  className="p-4 border border-slate-200 rounded-lg hover:border-slate-300 transition-colors"
+                  className="p-4 border border-slate-200 rounded-lg hover:border-slate-300 transition-colors cursor-pointer"
+                  onClick={() => setSelectedJob(job)}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -369,6 +372,13 @@ export default function ServiceCalls() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Service Call Detail Drawer */}
+      <ServiceCallDetailDrawer
+        job={selectedJob}
+        onClose={() => setSelectedJob(null)}
+        customers={customers}
+      />
     </div>
   );
 }
