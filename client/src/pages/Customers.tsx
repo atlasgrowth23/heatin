@@ -74,50 +74,42 @@ export default function Customers() {
           ) : (
             <div className="grid gap-4">
               {filteredCustomers.map((customer) => (
-                <div
-                  key={customer.id}
-                  className="p-4 border border-slate-200 rounded-lg hover:border-slate-300 transition-colors"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-slate-800">{customer.name}</h3>
-                      <div className="mt-2 space-y-1">
-                        {customer.email && (
-                          <div className="flex items-center text-sm text-slate-600">
-                            <Mail className="w-4 h-4 mr-2" />
-                            {customer.email}
-                          </div>
-                        )}
-                        {customer.phone && (
-                          <div className="flex items-center text-sm text-slate-600">
-                            <Phone className="w-4 h-4 mr-2" />
-                            {customer.phone}
-                          </div>
-                        )}
-                        {customer.address && (
-                          <div className="flex items-center text-sm text-slate-600">
-                            <MapPin className="w-4 h-4 mr-2" />
-                            {customer.address}
-                            {customer.city && `, ${customer.city}`}
-                            {customer.state && `, ${customer.state}`}
-                            {customer.zipCode && ` ${customer.zipCode}`}
-                          </div>
+                <Link key={customer.id} href={`/customers/${customer.id}`}>
+                  <div className="p-4 border border-slate-200 rounded-lg hover:border-slate-300 transition-colors cursor-pointer group">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-slate-800 group-hover:text-blue-600">{customer.name}</h3>
+                        <div className="mt-2 space-y-1">
+                          {customer.email && (
+                            <div className="flex items-center text-sm text-slate-600">
+                              <Mail className="w-4 h-4 mr-2" />
+                              {customer.email}
+                            </div>
+                          )}
+                          {customer.phone && (
+                            <div className="flex items-center text-sm text-slate-600">
+                              <Phone className="w-4 h-4 mr-2" />
+                              {customer.phone}
+                            </div>
+                          )}
+                          {customer.address && (
+                            <div className="flex items-center text-sm text-slate-600">
+                              <MapPin className="w-4 h-4 mr-2" />
+                              {customer.address}
+                              {customer.city && `, ${customer.city}`}
+                              {customer.state && `, ${customer.state}`}
+                              {customer.zipCode && ` ${customer.zipCode}`}
+                            </div>
+                          )}
+                        </div>
+                        {customer.notes && (
+                          <p className="mt-2 text-sm text-slate-500">{customer.notes}</p>
                         )}
                       </div>
-                      {customer.notes && (
-                        <p className="mt-2 text-sm text-slate-500">{customer.notes}</p>
-                      )}
-                    </div>
-                    <div className="flex space-x-2">
-                      <Button variant="outline" size="sm">
-                        Edit
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        View Jobs
-                      </Button>
+                      <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-blue-600" />
                     </div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           )}
