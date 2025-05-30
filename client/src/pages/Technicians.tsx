@@ -7,15 +7,22 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Search, Plus, User, Phone, Mail, HardHat } from "lucide-react";
 import TechnicianForm from "@/components/forms/TechnicianForm";
+import { useBusiness } from "@/hooks/useBusiness";
 import type { Technician } from "@shared/schema";
 
 export default function Technicians() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const { currentBusiness } = useBusiness();
 
-  const { data: technicians = [], isLoading } = useQuery<Technician[]>({
+  const { data: allTechnicians = [], isLoading } = useQuery<Technician[]>({
     queryKey: ["/api/technicians"],
   });
+
+  // Filter technicians by current business
+  const technicians = allTechnicians.filter(tech => 
+    tech.companyId === currentBusiness?.id
+  );
 
   const filteredTechnicians = technicians.filter(tech =>
     tech.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
