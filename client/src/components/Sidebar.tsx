@@ -2,7 +2,7 @@ import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { 
   BarChart3, Users, Calendar, ClipboardList, 
-  FileText, Package, HardHat, TrendingUp, Wrench 
+  FileText, Package, HardHat, TrendingUp, Wrench, Settings 
 } from "lucide-react";
 
 interface SidebarProps {
@@ -13,6 +13,7 @@ interface SidebarProps {
 const navigation = [
   { name: "Dashboard", href: "/", icon: BarChart3 },
   { name: "Customers", href: "/customers", icon: Users },
+  { name: "Services", href: "/services", icon: Settings },
   { name: "Scheduling", href: "/scheduling", icon: Calendar },
   { name: "Service Calls", href: "/service-calls", icon: ClipboardList },
   { name: "Invoicing", href: "/invoicing", icon: FileText },

@@ -7,6 +7,7 @@ import Layout from "@/components/Layout";
 import Dashboard from "@/pages/Dashboard";
 import Customers from "@/pages/Customers";
 import CustomerDetail from "@/pages/CustomerDetail";
+import Services from "@/pages/Services";
 import Scheduling from "@/pages/Scheduling";
 import ServiceCalls from "@/pages/ServiceCalls";
 import Invoicing from "@/pages/Invoicing";
@@ -40,6 +41,7 @@ function Router() {
             <Route path="/" component={Dashboard} />
             <Route path="/customers" component={Customers} />
             <Route path="/customers/:id" component={CustomerDetail} />
+            <Route path="/services" component={Services} />
             <Route path="/scheduling" component={Scheduling} />
             <Route path="/service-calls" component={ServiceCalls} />
             <Route path="/invoicing" component={Invoicing} />
