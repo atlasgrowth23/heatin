@@ -49,15 +49,24 @@ export default function Scheduling() {
   // Initialize Google Maps
   useEffect(() => {
     if (mapView === "map" && mapRef.current && !mapInstanceRef.current) {
+      // Check if Google Maps is already loaded
+      if ((window as any).google) {
+        initializeMap();
+        return;
+      }
+      
       const script = document.createElement("script");
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=geometry`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=geometry,places`;
       script.async = true;
       script.onload = () => {
         initializeMap();
       };
+      script.onerror = () => {
+        console.error("Failed to load Google Maps API");
+      };
       document.head.appendChild(script);
     }
-  }, [mapView]);
+  }, [mapView, customers, selectedDate]);
 
   const initializeMap = () => {
     if (!mapRef.current || !(window as any).google) return;
