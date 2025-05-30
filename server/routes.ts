@@ -103,59 +103,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(equipment);
   });
 
-  // Services
-  app.get("/api/services", async (req, res) => {
-    const services = await storage.getServices();
-    res.json(services);
-  });
 
-  app.get("/api/services/category/:category", async (req, res) => {
-    const category = req.params.category;
-    const services = await storage.getServicesByCategory(category);
-    res.json(services);
-  });
-
-  app.get("/api/services/:id", async (req, res) => {
-    const id = parseInt(req.params.id);
-    const service = await storage.getService(id);
-    if (!service) {
-      return res.status(404).json({ message: "Service not found" });
-    }
-    res.json(service);
-  });
-
-  app.post("/api/services", async (req, res) => {
-    try {
-      const serviceData = insertServiceSchema.parse(req.body);
-      const service = await storage.createService(serviceData);
-      res.status(201).json(service);
-    } catch (error) {
-      res.status(400).json({ message: "Invalid service data", error });
-    }
-  });
-
-  app.put("/api/services/:id", async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const serviceData = insertServiceSchema.partial().parse(req.body);
-      const service = await storage.updateService(id, serviceData);
-      if (!service) {
-        return res.status(404).json({ message: "Service not found" });
-      }
-      res.json(service);
-    } catch (error) {
-      res.status(400).json({ message: "Invalid service data", error });
-    }
-  });
-
-  app.delete("/api/services/:id", async (req, res) => {
-    const id = parseInt(req.params.id);
-    const success = await storage.deleteService(id);
-    if (!success) {
-      return res.status(404).json({ message: "Service not found" });
-    }
-    res.json({ message: "Service deleted successfully" });
-  });
 
   app.post("/api/customers", async (req, res) => {
     try {
