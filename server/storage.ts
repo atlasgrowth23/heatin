@@ -1,13 +1,19 @@
 import { eq, and, gte, lte } from "drizzle-orm";
 import { db } from "./db";
 import { 
-  users, customers, technicians, jobs, invoices, invoiceItems, inventory, equipment,
+  users, customers, technicians, jobs, invoices, invoiceItems, inventory, equipment, companies, userRoles,
   type User, type Customer, type Technician, type Job, type Invoice, type InvoiceItem, 
   type Inventory, type Equipment, type InsertUser, type InsertCustomer, type InsertTechnician,
   type InsertJob, type InsertInvoice, type InsertInvoiceItem, type InsertInventory, type InsertEquipment
 } from "@shared/schema";
 
 export interface IStorage {
+  // Companies
+  createCompany(company: any): Promise<any>;
+  
+  // User Roles
+  createUserRole(userRole: any): Promise<any>;
+  
   // Users
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
@@ -70,6 +76,18 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  // Companies
+  async createCompany(companyData: any): Promise<any> {
+    const result = await db.insert(companies).values(companyData).returning();
+    return result[0];
+  }
+
+  // User Roles
+  async createUserRole(userRoleData: any): Promise<any> {
+    const result = await db.insert(userRoles).values(userRoleData).returning();
+    return result[0];
+  }
+
   // Users
   async getUser(id: number): Promise<User | undefined> {
     const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
