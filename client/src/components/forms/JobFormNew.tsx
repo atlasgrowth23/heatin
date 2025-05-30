@@ -216,7 +216,7 @@ export default function JobFormNew({ onSuccess }: JobFormNewProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-4">
       {/* Customer and Basic Info */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
@@ -236,10 +236,113 @@ export default function JobFormNew({ onSuccess }: JobFormNewProps) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="technician">Assign Technician</Label>
+          <Label>Pricing Type</Label>
+          <Select value={customerType} onValueChange={(value: any) => setCustomerType(value)}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="standard">Standard Pricing</SelectItem>
+              <SelectItem value="membership">Membership Pricing</SelectItem>
+              <SelectItem value="after_hours">After Hours</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Service Search and Selection */}
+      <div className="space-y-3">
+        <Label>Services *</Label>
+        <div className="relative">
+          <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+          <Input
+            placeholder="Search HVAC services (tune-up, filter, repair, installation)..."
+            value={serviceSearch}
+            onChange={(e) => setServiceSearch(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        
+        {/* Service Search Results */}
+        {serviceSearch && filteredServices.length > 0 && (
+          <div className="border rounded-lg max-h-48 overflow-y-auto">
+            {filteredServices.slice(0, 8).map((service) => (
+              <div
+                key={service.id}
+                className="flex items-center justify-between p-3 border-b last:border-b-0 hover:bg-slate-50 cursor-pointer"
+                onClick={() => addService(service)}
+              >
+                <div className="flex-1">
+                  <div className="font-medium text-sm">{service.taskName}</div>
+                  <div className="text-xs text-slate-500">{service.sku} • {service.category}</div>
+                </div>
+                <div className="text-right">
+                  <div className="font-medium text-sm">
+                    ${customerType === "membership" && service.membershipPrice
+                      ? service.membershipPrice
+                      : customerType === "after_hours" && service.afterHoursPrice
+                      ? service.afterHoursPrice
+                      : service.standardPrice}
+                  </div>
+                  {service.estHours && (
+                    <div className="text-xs text-slate-400">{service.estHours}h</div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Selected Services */}
+        {selectedServices.length > 0 && (
+          <div className="bg-blue-50 rounded-lg p-3 space-y-2">
+            <div className="flex justify-between items-center mb-2">
+              <h4 className="font-medium text-sm">Selected Services</h4>
+              <div className="flex items-center text-lg font-semibold">
+                <DollarSign className="mr-1 h-4 w-4" />
+                {getTotalPrice().toFixed(2)}
+              </div>
+            </div>
+            {selectedServices.map((service, index) => (
+              <div key={index} className="flex items-center justify-between bg-white p-2 rounded text-sm">
+                <div className="flex-1">
+                  <div className="font-medium">{service.taskName}</div>
+                  <div className="text-xs text-slate-500">{service.sku}</div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="font-medium">${getServicePrice(service).toFixed(2)}</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeService(index)}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Scheduling */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="scheduledDate">Scheduled Date & Time</Label>
+          <Input
+            id="scheduledDate"
+            type="datetime-local"
+            value={scheduledDate}
+            onChange={(e) => setScheduledDate(e.target.value)}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="technician">Technician (optional)</Label>
           <Select value={technicianId} onValueChange={setTechnicianId}>
             <SelectTrigger>
-              <SelectValue placeholder="Select technician (optional)" />
+              <SelectValue placeholder="Unassigned" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="unassigned">Unassigned</SelectItem>
@@ -253,267 +356,19 @@ export default function JobFormNew({ onSuccess }: JobFormNewProps) {
         </div>
       </div>
 
-      {/* Customer Type and Pricing */}
       <div className="space-y-2">
-        <Label>Customer Type & Pricing</Label>
-        <div className="flex space-x-4">
-          <Button
-            type="button"
-            variant={customerType === "standard" ? "default" : "outline"}
-            onClick={() => setCustomerType("standard")}
-            className="flex-1"
-          >
-            Standard Pricing
-          </Button>
-          <Button
-            type="button"
-            variant={customerType === "membership" ? "default" : "outline"}
-            onClick={() => setCustomerType("membership")}
-            className="flex-1"
-          >
-            Membership Pricing
-          </Button>
-          <Button
-            type="button"
-            variant={customerType === "after_hours" ? "default" : "outline"}
-            onClick={() => setCustomerType("after_hours")}
-            className="flex-1"
-          >
-            After Hours
-          </Button>
-        </div>
-      </div>
-
-      {/* Service Selection */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">Services</CardTitle>
-            <div className="flex space-x-2">
-              <Button
-                type="button"
-                onClick={() => setShowServicePreview(!showServicePreview)}
-                variant="outline"
-                size="sm"
-              >
-                Preview Services
-              </Button>
-              <Button
-                type="button"
-                onClick={() => setShowServiceSelector(!showServiceSelector)}
-                variant="outline"
-                size="sm"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Add Service
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Service Preview */}
-          {showServicePreview && (
-            <div className="border rounded-lg p-4 space-y-4 bg-slate-50">
-              <div className="flex items-center justify-between">
-                <h4 className="font-medium">Available HVAC Services</h4>
-                <Badge variant="secondary">{pricebook.length} services</Badge>
-              </div>
-              
-              <div className="max-h-96 overflow-y-auto space-y-3">
-                {Object.entries(servicesByCategory).map(([category, services]) => (
-                  <div key={category}>
-                    <h5 className="font-medium text-slate-700 mb-2 sticky top-0 bg-slate-50 py-1">
-                      {category} ({services.length})
-                    </h5>
-                    <div className="space-y-2">
-                      {services.map((service) => (
-                        <div key={service.id} className="bg-white p-3 rounded border text-sm">
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                              <div className="font-medium text-slate-800">{service.taskName}</div>
-                              <div className="text-slate-600 text-xs">{service.sku} • {service.category}</div>
-                              {service.customerDescription && (
-                                <div className="text-slate-500 text-xs mt-1">{service.customerDescription}</div>
-                              )}
-                            </div>
-                            <div className="text-right ml-4">
-                              <div className="text-sm font-medium">${service.standardPrice}</div>
-                              {service.membershipPrice && (
-                                <div className="text-xs text-green-600">Member: ${service.membershipPrice}</div>
-                              )}
-                              {service.estHours && (
-                                <div className="text-xs text-slate-500">{service.estHours}h</div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Service Selector */}
-          {showServiceSelector && (
-            <div className="border rounded-lg p-4 space-y-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                <Input
-                  placeholder="Search services by name, category, or SKU..."
-                  value={serviceSearch}
-                  onChange={(e) => setServiceSearch(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              
-              {Object.entries(servicesByCategory).map(([category, services]) => (
-                <div key={category}>
-                  <h4 className="font-medium text-slate-700 mb-2">{category}</h4>
-                  <div className="grid grid-cols-1 gap-2">
-                    {services.map((service) => (
-                      <div
-                        key={service.id}
-                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-slate-50 cursor-pointer"
-                        onClick={() => addService(service)}
-                      >
-                        <div className="flex-1">
-                          <div className="font-medium">{service.taskName}</div>
-                          <div className="text-sm text-slate-500">
-                            {service.sku} • {service.category}
-                          </div>
-                          {service.customerDescription && (
-                            <div className="text-xs text-slate-400 mt-1">
-                              {service.customerDescription}
-                            </div>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <div className="font-medium">
-                            ${customerType === "membership" && service.membershipPrice
-                              ? service.membershipPrice
-                              : customerType === "after_hours" && service.afterHoursPrice
-                              ? service.afterHoursPrice
-                              : service.standardPrice}
-                          </div>
-                          {service.estHours && (
-                            <div className="text-sm text-slate-500">
-                              {service.estHours}h
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Selected Services */}
-          {selectedServices.length > 0 && (
-            <div className="space-y-2">
-              <h4 className="font-medium">Selected Services</h4>
-              {selectedServices.map((service, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                  <div className="flex-1">
-                    <div className="font-medium">{service.taskName}</div>
-                    <div className="text-sm text-slate-600">{service.sku}</div>
-                  </div>
-                  <div className="flex items-center space-x-4">
-                    <div className="text-right">
-                      <div className="font-medium">${getServicePrice(service).toFixed(2)}</div>
-                      {service.estHours && (
-                        <div className="text-sm text-slate-500">{service.estHours}h</div>
-                      )}
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeService(index)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-              
-              {/* Totals */}
-              <div className="border-t pt-3 mt-3">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center space-x-4">
-                    <div className="flex items-center text-sm text-slate-600">
-                      <Clock className="mr-1 h-4 w-4" />
-                      {estimatedHours.toFixed(1)}h estimated
-                    </div>
-                    <Badge variant="secondary">
-                      {selectedServices.length} service{selectedServices.length !== 1 ? 's' : ''}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center text-lg font-semibold">
-                    <DollarSign className="mr-1 h-5 w-5" />
-                    {getTotalPrice().toFixed(2)}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Scheduling and Details */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="scheduledDate">Scheduled Date & Time</Label>
-          <Input
-            id="scheduledDate"
-            type="datetime-local"
-            value={scheduledDate}
-            onChange={(e) => setScheduledDate(e.target.value)}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="priority">Priority</Label>
-          <Select value={priority} onValueChange={setPriority}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="low">Low</SelectItem>
-              <SelectItem value="medium">Medium</SelectItem>
-              <SelectItem value="high">High</SelectItem>
-              <SelectItem value="emergency">Emergency</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="title">Service Call Title</Label>
-        <Input
-          id="title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Auto-populated from selected services"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="description">Description & Notes</Label>
+        <Label htmlFor="description">Notes (optional)</Label>
         <Textarea
           id="description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Additional details, customer requests, special instructions..."
-          rows={3}
+          placeholder="Special instructions, customer requests..."
+          rows={2}
         />
       </div>
 
       {/* Submit */}
-      <div className="flex justify-end space-x-4">
+      <div className="flex justify-end space-x-3">
         <Button type="button" variant="outline" onClick={resetForm}>
           Reset
         </Button>
