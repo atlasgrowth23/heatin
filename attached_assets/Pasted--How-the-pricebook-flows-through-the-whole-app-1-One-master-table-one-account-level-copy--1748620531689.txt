@@ -1,0 +1,31 @@
+**How the pricebook flows through the whole app**
+
+1. **One master table, one account-level copy**
+
+   * Database holds a *global* copy of the pricebook (your template).
+   * When you create a new business (Account ID), the app clones that template into an *account\_pricebook* table keyed to their Account ID.
+   * Owners can then **edit, add, deactivate, or re-price** items without touching anyone else’s data. “Hide” simply sets an `is_active = false` flag so old invoices keep their history.
+
+2. **Where it shows up**
+
+| App area                       | What’s pulled from the pricebook                                                                                                               | What happens next                                                                     |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| **Jobs** (list / calendar)     | Tech picks tasks from a searchable list fed by the account’s pricebook (`Task Name`, `Standard Price`, `Est. Hours`).                          | Est. Hours blocks over-booking; tasks drop into the Job card.                         |
+| **Invoices & Payments**        | Clicking “Create Invoice” copies the Job’s line items—**but** swaps in `Membership Price` or `After-Hours Price` automatically if rules match. | Amounts are locked once invoice is sent, even if the owner later edits the pricebook. |
+| **Customer equipment history** | Any line that has an `Equipment Type` writes an “event” to that piece of gear when the Job is closed: “Compressor replaced – SKU AC-COMP-RPL.” | Tech sees full repair timeline next visit.                                            |
+| **Dashboard & Reports**        | Revenue by **Category** (Maintenance, Repair, Install) and labor efficiency (Σ `Est. Hours` vs actual) come straight from pricebook fields.    | Bigger shops get instant KPI charts without custom tagging.                           |
+
+3. **Editing workflow for the owner**
+
+* **Pricebook tab** → inline grid.
+  *Change price?* Click cell, type new value.
+  *Want to retire an item?* Toggle “Hide.”
+  *Need a new task?* “Add Row” at top or CSV import.
+* Edits take effect on **new** Jobs/Invoices only; past records stay intact.
+
+4. **Your admin superpowers**
+
+* Push global updates (e.g., refrigerant price spike) → accounts get a “Review & Apply” banner so they can accept or ignore.
+* Set feature flags: solo shops see flat-rate columns only; bigger crews can enable Parts Kit or Warranty Code columns when ready.
+
+**In short:** the pricebook is the single source of truth for task names, pricing, labor estimates, and equipment tags. Every other tab just *reads* from it or *records* what was used, so when the owner tweaks their catalog the whole workflow—quote ➜ schedule ➜ invoice ➜ report—stays in sync without extra data entry.
