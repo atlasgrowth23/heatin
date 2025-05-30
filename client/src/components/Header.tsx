@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Menu, Search, Bell, Plus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import JobForm from "./forms/JobFormNew";
+import BusinessSelector from "./BusinessSelector";
 
 interface HeaderProps {
   onMobileMenuToggle: () => void;
@@ -25,6 +26,7 @@ export default function Header({ onMobileMenuToggle }: HeaderProps) {
             <Menu className="h-5 w-5" />
           </Button>
           <h1 className="text-2xl font-bold text-slate-800">Dashboard</h1>
+          <BusinessSelector />
         </div>
         
         <div className="flex items-center space-x-4">

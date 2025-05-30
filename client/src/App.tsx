@@ -19,6 +19,7 @@ import Landing from "@/pages/Landing";
 import NotFound from "@/pages/not-found";
 import BusinessSelection from "@/pages/BusinessSelection";
 import { useAuth, AuthProvider } from "@/hooks/useAuth";
+import { BusinessProvider } from "@/hooks/useBusiness";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -67,8 +68,10 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <TooltipProvider>
-          <Toaster />
-          <Router />
+          <BusinessProvider>
+            <Toaster />
+            <Router />
+          </BusinessProvider>
         </TooltipProvider>
       </AuthProvider>
     </QueryClientProvider>
