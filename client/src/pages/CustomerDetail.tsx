@@ -108,48 +108,51 @@ export default function CustomerDetail() {
           <CardHeader>
             <CardTitle>Contact Information</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {customer.email && (
-                <div className="flex items-center space-x-3">
-                  <Mail className="w-5 h-5 text-slate-400" />
-                  <div>
-                    <p className="text-sm text-slate-600">Email</p>
-                    <p className="font-medium">{customer.email}</p>
+          <CardContent>
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+              <div className="flex flex-col sm:flex-row sm:items-start space-y-3 sm:space-y-0 sm:space-x-8">
+                {customer.email && (
+                  <div className="flex items-center space-x-2">
+                    <Mail className="w-4 h-4 text-slate-400" />
+                    <span className="font-medium">{customer.email}</span>
                   </div>
-                </div>
-              )}
-              
-              {customer.phone && (
-                <div className="flex items-center space-x-3">
-                  <Phone className="w-5 h-5 text-slate-400" />
-                  <div>
-                    <p className="text-sm text-slate-600">Phone</p>
-                    <p className="font-medium">{customer.phone}</p>
+                )}
+                
+                {customer.phone && (
+                  <div className="flex items-center space-x-2">
+                    <Phone className="w-4 h-4 text-slate-400" />
+                    <span className="font-medium">{customer.phone}</span>
                   </div>
-                </div>
-              )}
-            </div>
-
-            {(customer.address || customer.city || customer.state) && (
-              <div className="flex items-start space-x-3">
-                <MapPin className="w-5 h-5 text-slate-400 mt-1" />
-                <div>
-                  <p className="text-sm text-slate-600">Address</p>
-                  <div className="font-medium">
-                    {customer.address && <p>{customer.address}</p>}
-                    {(customer.city || customer.state || customer.zipCode) && (
-                      <p>
-                        {customer.city}{customer.city && customer.state && ", "}{customer.state} {customer.zipCode}
-                      </p>
-                    )}
+                )}
+                
+                {(customer.address || customer.city || customer.state) && (
+                  <div className="flex items-center space-x-2">
+                    <MapPin className="w-4 h-4 text-slate-400" />
+                    <span className="font-medium text-slate-600">
+                      {customer.address && customer.address}
+                      {customer.address && (customer.city || customer.state) && ', '}
+                      {customer.city}{customer.city && customer.state && ', '}{customer.state} {customer.zipCode}
+                    </span>
                   </div>
-                </div>
+                )}
               </div>
-            )}
-
+              
+              <div className="flex space-x-2">
+                {customer.phone && (
+                  <Button variant="outline" size="sm">
+                    <Phone className="w-4 h-4" />
+                  </Button>
+                )}
+                {customer.email && (
+                  <Button variant="outline" size="sm">
+                    <Mail className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
+            
             {customer.notes && (
-              <div>
+              <div className="mt-4 pt-4 border-t border-slate-200">
                 <p className="text-sm text-slate-600 mb-2">Notes</p>
                 <p className="text-slate-800 bg-slate-50 p-3 rounded-lg">{customer.notes}</p>
               </div>
