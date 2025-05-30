@@ -84,6 +84,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(customer);
   });
 
+  // Customer-related endpoints for detail page
+  app.get("/api/jobs/customer/:customerId", async (req, res) => {
+    const customerId = parseInt(req.params.customerId);
+    const jobs = await storage.getJobsByCustomer(customerId);
+    res.json(jobs);
+  });
+
+  app.get("/api/invoices/customer/:customerId", async (req, res) => {
+    const customerId = parseInt(req.params.customerId);
+    const invoices = await storage.getInvoicesByCustomer(customerId);
+    res.json(invoices);
+  });
+
+  app.get("/api/equipment/customer/:customerId", async (req, res) => {
+    const customerId = parseInt(req.params.customerId);
+    const equipment = await storage.getEquipmentByCustomer(customerId);
+    res.json(equipment);
+  });
+
   app.post("/api/customers", async (req, res) => {
     try {
       const customerData = insertCustomerSchema.parse(req.body);
