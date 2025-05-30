@@ -27,6 +27,16 @@ export default function CustomerForm({ onSuccess }: CustomerFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Format phone number as user types
+  const formatPhoneNumber = (value: string) => {
+    const cleaned = value.replace(/\D/g, '');
+    const match = cleaned.match(/^(\d{3})(\d{3})(\d{4})$/);
+    if (match) {
+      return `${match[1]}-${match[2]}-${match[3]}`;
+    }
+    return value;
+  };
+
   const form = useForm<InsertCustomer>({
     resolver: zodResolver(insertCustomerSchema),
     defaultValues: {
@@ -43,7 +53,29 @@ export default function CustomerForm({ onSuccess }: CustomerFormProps) {
 
   const createCustomerMutation = useMutation({
     mutationFn: async (data: InsertCustomer) => {
-      const response = await apiRequest("POST", "/api/customers", data);
+      // Geocode address if provided
+      let geocodedData = { ...data };
+      if (data.address && data.city && data.state) {
+        try {
+          const fullAddress = `${data.address}, ${data.city}, ${data.state} ${data.zipCode || ''}`;
+          const geocodeResponse = await fetch(`/api/maps/geocode?address=${encodeURIComponent(fullAddress)}`, {
+            credentials: "include",
+          });
+          
+          if (geocodeResponse.ok) {
+            const geocodeResult = await geocodeResponse.json();
+            geocodedData = {
+              ...data,
+              latitude: geocodeResult.latitude,
+              longitude: geocodeResult.longitude,
+            };
+          }
+        } catch (error) {
+          console.log("Geocoding failed, proceeding without coordinates:", error);
+        }
+      }
+
+      const response = await apiRequest("POST", "/api/customers", geocodedData);
       return response.json();
     },
     onSuccess: () => {
@@ -120,7 +152,15 @@ export default function CustomerForm({ onSuccess }: CustomerFormProps) {
               <FormItem>
                 <FormLabel>Phone Number</FormLabel>
                 <FormControl>
-                  <Input placeholder="(555) 123-4567" {...field} value={field.value || ""} />
+                  <Input 
+                    placeholder="555-123-4567" 
+                    {...field}
+                    value={field.value || ""}
+                    onChange={(e) => {
+                      const formatted = formatPhoneNumber(e.target.value);
+                      field.onChange(formatted);
+                    }}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
