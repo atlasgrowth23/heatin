@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Search, DollarSign, Clock, Wrench, Edit, Trash2 } from "lucide-react";
+import { Plus, Search, DollarSign, Clock, Wrench, Edit, Trash2, ChevronDown } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Service } from "@shared/schema";
@@ -14,47 +14,58 @@ import type { Service } from "@shared/schema";
 export default function Services() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeCategory, setActiveCategory] = useState("all");
+  const [activeCategory, setActiveCategory] = useState("hvac");
   const { toast } = useToast();
 
   const { data: services = [], isLoading } = useQuery<Service[]>({
     queryKey: ["/api/services"],
   });
 
-  const categories = [
-    "all",
-    "AC Repair",
-    "AC Installation", 
-    "AC Maintenance",
-    "Heating Repair",
-    "Heating Installation",
-    "Heating Maintenance",
-    "Ductwork Services",
-    "Emergency Services",
-    "Air Quality Services"
+  // Main catalog sections
+  const catalogSections = [
+    { 
+      id: "hvac", 
+      name: "HVAC Services", 
+      description: "Air conditioning, heating, and ventilation services",
+      categories: ["AC Repair", "AC Installation", "AC Maintenance", "Heating Repair", "Heating Installation", "Heating Maintenance"]
+    },
+    { 
+      id: "operations", 
+      name: "Business Operations", 
+      description: "Service calls, diagnostics, and operational fees",
+      categories: ["Diagnostic Fees", "Service Calls", "Emergency Services", "Travel Time"]
+    },
+    { 
+      id: "parts", 
+      name: "Parts & Materials", 
+      description: "Equipment, parts, and materials catalog",
+      categories: ["Equipment", "Refrigerants", "Filters", "Electrical Components"]
+    }
   ];
 
-  const filteredServices = services.filter(service => {
-    const matchesSearch = service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         service.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = activeCategory === "all" || service.category === activeCategory;
-    return matchesSearch && matchesCategory;
-  });
-
-  const groupedServices = categories.reduce((acc, category) => {
-    if (category === "all") return acc;
-    acc[category] = services.filter(service => service.category === category);
-    return acc;
-  }, {} as Record<string, Service[]>);
+  const getServicesForSection = (sectionId: string) => {
+    const section = catalogSections.find(s => s.id === sectionId);
+    if (!section) return [];
+    
+    return services.filter(service => 
+      section.categories.includes(service.category) &&
+      (searchTerm === "" || 
+       service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+       service.description?.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+  };
 
   if (isLoading) {
-    return <div>Loading services...</div>;
+    return <div>Loading catalog...</div>;
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">Services</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800">Service Catalog</h1>
+          <p className="text-slate-600">Manage your services, pricing, and business operations</p>
+        </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button>
@@ -77,55 +88,62 @@ export default function Services() {
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
               <Input
-                placeholder="Search services..."
+                placeholder="Search catalog..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
               />
             </div>
-            <Badge variant="outline">
-              {filteredServices.length} service{filteredServices.length !== 1 ? 's' : ''}
-            </Badge>
           </div>
         </CardHeader>
         <CardContent>
           <Tabs value={activeCategory} onValueChange={setActiveCategory}>
-            <TabsList className="grid grid-cols-5 lg:grid-cols-10 mb-6">
-              {categories.map((category) => (
-                <TabsTrigger key={category} value={category} className="text-xs">
-                  {category === "all" ? "All" : category.replace(" Services", "")}
+            <TabsList className="grid grid-cols-3 mb-6">
+              {catalogSections.map((section) => (
+                <TabsTrigger key={section.id} value={section.id} className="text-center">
+                  <div>
+                    <div className="font-medium">{section.name}</div>
+                    <div className="text-xs text-slate-500">{section.description}</div>
+                  </div>
                 </TabsTrigger>
               ))}
             </TabsList>
 
-            <TabsContent value="all">
-              <div className="grid gap-4">
-                {Object.entries(groupedServices).map(([category, categoryServices]) => 
-                  categoryServices.length > 0 && (
-                    <div key={category}>
-                      <h3 className="font-semibold text-slate-700 mb-3">{category}</h3>
-                      <div className="grid gap-3 mb-6">
-                        {categoryServices.map((service) => (
-                          <ServiceCard key={service.id} service={service} />
-                        ))}
+            {catalogSections.map((section) => (
+              <TabsContent key={section.id} value={section.id}>
+                <div className="space-y-6">
+                  {section.categories.map((category) => {
+                    const categoryServices = services.filter(service => 
+                      service.category === category &&
+                      (searchTerm === "" || 
+                       service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                       service.description?.toLowerCase().includes(searchTerm.toLowerCase()))
+                    );
+                    
+                    return (
+                      <div key={category}>
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="font-semibold text-slate-800">{category}</h3>
+                          <Badge variant="outline">{categoryServices.length}</Badge>
+                        </div>
+                        {categoryServices.length > 0 ? (
+                          <div className="grid gap-3">
+                            {categoryServices.map((service) => (
+                              <ServiceCard key={service.id} service={service} />
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-8 text-slate-500 border-2 border-dashed border-slate-200 rounded-lg">
+                            <p>No services in this category yet.</p>
+                            <Button variant="ghost" size="sm" className="mt-2">
+                              <Plus className="w-4 h-4 mr-2" />
+                              Add {category} Service
+                            </Button>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  )
-                )}
-              </div>
-            </TabsContent>
-
-            {categories.slice(1).map((category) => (
-              <TabsContent key={category} value={category}>
-                <div className="grid gap-3">
-                  {groupedServices[category]?.map((service) => (
-                    <ServiceCard key={service.id} service={service} />
-                  ))}
-                  {(!groupedServices[category] || groupedServices[category].length === 0) && (
-                    <div className="text-center py-8 text-slate-500">
-                      No services in this category yet.
-                    </div>
-                  )}
+                    );
+                  })}
                 </div>
               </TabsContent>
             ))}
@@ -206,10 +224,137 @@ function ServiceCard({ service }: { service: Service }) {
 }
 
 function ServiceForm({ onSuccess }: { onSuccess?: () => void }) {
-  // We'll implement this form component next
+  const [formData, setFormData] = useState({
+    name: "",
+    category: "AC Repair",
+    description: "",
+    basePrice: "",
+    estimatedDuration: "",
+    equipmentNeeded: "",
+    partsNeeded: ""
+  });
+  const { toast } = useToast();
+
+  const createServiceMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await apiRequest("/api/services", {
+        method: "POST",
+        body: JSON.stringify({
+          ...data,
+          basePrice: data.basePrice ? parseFloat(data.basePrice) : null,
+          estimatedDuration: data.estimatedDuration ? parseInt(data.estimatedDuration) : null,
+          equipmentNeeded: data.equipmentNeeded ? data.equipmentNeeded.split(",").map((s: string) => s.trim()).filter(Boolean) : [],
+          partsNeeded: data.partsNeeded ? data.partsNeeded.split(",").map((s: string) => s.trim()).filter(Boolean) : []
+        }),
+        headers: { "Content-Type": "application/json" }
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/services"] });
+      toast({ title: "Service added successfully" });
+      onSuccess?.();
+    },
+    onError: () => {
+      toast({ title: "Failed to add service", variant: "destructive" });
+    }
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    createServiceMutation.mutate(formData);
+  };
+
+  const categories = [
+    "AC Repair", "AC Installation", "AC Maintenance",
+    "Heating Repair", "Heating Installation", "Heating Maintenance",
+    "Diagnostic Fees", "Service Calls", "Emergency Services", "Travel Time",
+    "Equipment", "Refrigerants", "Filters", "Electrical Components"
+  ];
+
   return (
-    <div className="p-4 text-center text-slate-500">
-      Service form will be implemented next
-    </div>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium mb-1">Service Name</label>
+          <Input
+            value={formData.name}
+            onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+            placeholder="Enter service name"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Category</label>
+          <select
+            value={formData.category}
+            onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
+            className="w-full p-2 border border-slate-300 rounded-md"
+            required
+          >
+            {categories.map(cat => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1">Description</label>
+        <textarea
+          value={formData.description}
+          onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+          placeholder="Service description..."
+          className="w-full p-2 border border-slate-300 rounded-md"
+          rows={3}
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium mb-1">Base Price ($)</label>
+          <Input
+            type="number"
+            step="0.01"
+            value={formData.basePrice}
+            onChange={(e) => setFormData(prev => ({ ...prev, basePrice: e.target.value }))}
+            placeholder="0.00"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Duration (minutes)</label>
+          <Input
+            type="number"
+            value={formData.estimatedDuration}
+            onChange={(e) => setFormData(prev => ({ ...prev, estimatedDuration: e.target.value }))}
+            placeholder="60"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1">Equipment Needed</label>
+        <Input
+          value={formData.equipmentNeeded}
+          onChange={(e) => setFormData(prev => ({ ...prev, equipmentNeeded: e.target.value }))}
+          placeholder="Multimeter, Gauges, Tools (comma separated)"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1">Parts Needed</label>
+        <Input
+          value={formData.partsNeeded}
+          onChange={(e) => setFormData(prev => ({ ...prev, partsNeeded: e.target.value }))}
+          placeholder="Filters, Refrigerant, Fuses (comma separated)"
+        />
+      </div>
+
+      <div className="flex justify-end space-x-2 pt-4">
+        <Button type="submit" disabled={createServiceMutation.isPending}>
+          {createServiceMutation.isPending ? "Adding..." : "Add Service"}
+        </Button>
+      </div>
+    </form>
   );
 }
