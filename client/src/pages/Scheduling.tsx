@@ -1,14 +1,22 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect, useRef } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, User, MapPin } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar, Clock, User, MapPin, Route, Navigation } from "lucide-react";
 import { format, startOfWeek, addDays, isSameDay } from "date-fns";
+import { apiRequest } from "@/lib/queryClient";
 import type { Job, Customer, Technician } from "@shared/schema";
 
 export default function Scheduling() {
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedTechnician, setSelectedTechnician] = useState<string>("");
+  const [mapView, setMapView] = useState<"schedule" | "map">("schedule");
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<any>(null);
+  const queryClient = useQueryClient();
+  
   const weekStart = startOfWeek(selectedDate);
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
@@ -23,6 +31,56 @@ export default function Scheduling() {
   const { data: technicians = [] } = useQuery<Technician[]>({
     queryKey: ["/api/technicians"],
   });
+
+  // Route optimization mutation
+  const optimizeRoute = useMutation({
+    mutationFn: async (data: { technicianId: number; date: string }) => {
+      return await apiRequest({
+        url: "/api/routes/optimize",
+        method: "POST",
+        body: data,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/routes"] });
+    },
+  });
+
+  // Initialize Google Maps
+  useEffect(() => {
+    if (mapView === "map" && mapRef.current && !mapInstanceRef.current) {
+      const script = document.createElement("script");
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=geometry`;
+      script.async = true;
+      script.onload = () => {
+        initializeMap();
+      };
+      document.head.appendChild(script);
+    }
+  }, [mapView]);
+
+  const initializeMap = () => {
+    if (!mapRef.current || !window.google) return;
+
+    mapInstanceRef.current = new window.google.maps.Map(mapRef.current, {
+      zoom: 10,
+      center: { lat: 39.8283, lng: -98.5795 }, // Center of US
+      mapTypeId: window.google.maps.MapTypeId.ROADMAP,
+    });
+
+    // Add markers for today's jobs
+    const todaysJobs = getJobsForDate(selectedDate);
+    todaysJobs.forEach((job) => {
+      const customer = customers.find(c => c.id === job.customerId);
+      if (customer && customer.latitude && customer.longitude) {
+        new window.google.maps.Marker({
+          position: { lat: customer.latitude, lng: customer.longitude },
+          map: mapInstanceRef.current,
+          title: `${customer.name} - ${job.description}`,
+        });
+      }
+    });
+  };
 
   const getCustomerName = (customerId: number) => {
     const customer = customers.find(c => c.id === customerId);
@@ -64,54 +122,123 @@ export default function Scheduling() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">Scheduling</h1>
+        <h1 className="text-2xl font-bold text-slate-800">Scheduling & Route Management</h1>
         <div className="flex items-center space-x-4">
-          <Button variant="outline">
-            <Calendar className="mr-2 h-4 w-4" />
-            Week View
-          </Button>
+          <Select value={selectedTechnician} onValueChange={setSelectedTechnician}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Select Technician" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Technicians</SelectItem>
+              {technicians.map((tech) => (
+                <SelectItem key={tech.id} value={tech.id.toString()}>
+                  {tech.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="flex border rounded-lg overflow-hidden">
+            <Button 
+              variant={mapView === "schedule" ? "default" : "outline"}
+              onClick={() => setMapView("schedule")}
+              className="rounded-none"
+            >
+              <Calendar className="mr-2 h-4 w-4" />
+              Schedule
+            </Button>
+            <Button 
+              variant={mapView === "map" ? "default" : "outline"}
+              onClick={() => setMapView("map")}
+              className="rounded-none"
+            >
+              <MapPin className="mr-2 h-4 w-4" />
+              Map View
+            </Button>
+          </div>
           <Button>
             Schedule New Job
           </Button>
         </div>
       </div>
 
-      {/* Week Navigation */}
+      {/* Date Navigation and Route Optimization */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>
-              Week of {format(weekStart, "MMMM d, yyyy")}
+              {mapView === "schedule" ? `Week of ${format(weekStart, "MMMM d, yyyy")}` : `Jobs for ${format(selectedDate, "MMMM d, yyyy")}`}
             </CardTitle>
             <div className="flex space-x-2">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setSelectedDate(addDays(selectedDate, -7))}
-              >
-                Previous
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setSelectedDate(new Date())}
-              >
-                Today
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setSelectedDate(addDays(selectedDate, 7))}
-              >
-                Next
-              </Button>
+              {mapView === "schedule" ? (
+                <>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setSelectedDate(addDays(selectedDate, -7))}
+                  >
+                    Previous
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setSelectedDate(new Date())}
+                  >
+                    Today
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setSelectedDate(addDays(selectedDate, 7))}
+                  >
+                    Next
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setSelectedDate(addDays(selectedDate, -1))}
+                  >
+                    Previous Day
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setSelectedDate(new Date())}
+                  >
+                    Today
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setSelectedDate(addDays(selectedDate, 1))}
+                  >
+                    Next Day
+                  </Button>
+                  {selectedTechnician && selectedTechnician !== "all" && (
+                    <Button 
+                      onClick={() => optimizeRoute.mutate({ 
+                        technicianId: parseInt(selectedTechnician), 
+                        date: format(selectedDate, "yyyy-MM-dd") 
+                      })}
+                      disabled={optimizeRoute.isPending}
+                    >
+                      <Route className="mr-2 h-4 w-4" />
+                      {optimizeRoute.isPending ? "Optimizing..." : "Optimize Route"}
+                    </Button>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </CardHeader>
       </Card>
 
-      {/* Week Calendar Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-7 gap-4">
+      {/* Conditional View: Schedule or Map */}
+      {mapView === "schedule" ? (
+        /* Week Calendar Grid */
+        <div className="grid grid-cols-1 lg:grid-cols-7 gap-4">
         {weekDays.map((day) => {
           const dayJobs = getJobsForDate(day);
           const isToday = isSameDay(day, new Date());
