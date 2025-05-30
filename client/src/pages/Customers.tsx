@@ -21,6 +21,11 @@ export default function Customers() {
   const { data: customers = [], isLoading } = useQuery<Customer[]>({
     queryKey: [getApiUrl("/customers"), currentBusiness?.id],
     enabled: isValidTenant,
+    queryFn: async () => {
+      const response = await fetch(getApiUrl("/customers"), { credentials: "include" });
+      if (!response.ok) throw new Error("Failed to fetch customers");
+      return response.json();
+    },
   });
 
   const filteredCustomers = customers.filter(customer => {

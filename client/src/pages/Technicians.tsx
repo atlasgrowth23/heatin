@@ -18,6 +18,11 @@ export default function Technicians() {
   const { data: technicians = [], isLoading } = useQuery<Technician[]>({
     queryKey: [getApiUrl("/technicians"), currentBusiness?.id],
     enabled: isValidTenant,
+    queryFn: async () => {
+      const response = await fetch(getApiUrl("/technicians"), { credentials: "include" });
+      if (!response.ok) throw new Error("Failed to fetch technicians");
+      return response.json();
+    },
   });
 
   const filteredTechnicians = technicians.filter(tech =>
