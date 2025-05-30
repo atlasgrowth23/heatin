@@ -83,45 +83,47 @@ export default function Customers() {
               {filteredCustomers.map((customer, index) => (
                 <div key={customer.id} className={`${index !== 0 ? 'border-t border-slate-100' : ''}`}>
                   <Link href={`/customers/${customer.id}`}>
-                    <div className="p-6 hover:bg-slate-50 transition-colors cursor-pointer group">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
+                    <div className="p-8 hover:bg-slate-50 transition-colors cursor-pointer group">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start space-x-6 flex-1">
                           {/* Customer Avatar */}
-                          <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                            <span className="text-blue-700 font-semibold text-lg">
+                          <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span className="text-blue-700 font-semibold text-xl">
                               {customer.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
                             </span>
                           </div>
                           
                           {/* Customer Info */}
-                          <div className="flex-1">
-                            <h3 className="font-semibold text-slate-900 group-hover:text-blue-600 text-lg">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-slate-900 group-hover:text-blue-600 text-xl mb-3">
                               {customer.name}
                             </h3>
-                            <div className="flex items-center space-x-4 mt-1">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                               {customer.phone && (
                                 <div className="flex items-center text-sm text-slate-600">
-                                  <Phone className="w-4 h-4 mr-1" />
-                                  {customer.phone}
+                                  <Phone className="w-4 h-4 mr-2 flex-shrink-0" />
+                                  <span className="truncate">{customer.phone}</span>
                                 </div>
                               )}
                               {customer.email && (
                                 <div className="flex items-center text-sm text-slate-600">
-                                  <Mail className="w-4 h-4 mr-1" />
-                                  {customer.email}
+                                  <Mail className="w-4 h-4 mr-2 flex-shrink-0" />
+                                  <span className="truncate">{customer.email}</span>
                                 </div>
                               )}
                             </div>
                             {customer.address && (
-                              <div className="flex items-center text-sm text-slate-500 mt-1">
-                                <MapPin className="w-4 h-4 mr-1" />
-                                {customer.address}{customer.city && `, ${customer.city}`}{customer.state && `, ${customer.state}`}
+                              <div className="flex items-start text-sm text-slate-500 mt-3">
+                                <MapPin className="w-4 h-4 mr-2 flex-shrink-0 mt-0.5" />
+                                <span className="break-words">
+                                  {customer.address}{customer.city && `, ${customer.city}`}{customer.state && `, ${customer.state}`}
+                                </span>
                               </div>
                             )}
                           </div>
                         </div>
                         
-                        <ArrowRight className="w-5 h-5 text-slate-400 group-hover:text-blue-600 transition-colors" />
+                        <ArrowRight className="w-5 h-5 text-slate-400 group-hover:text-blue-600 transition-colors flex-shrink-0 ml-4" />
                       </div>
                     </div>
                   </Link>
