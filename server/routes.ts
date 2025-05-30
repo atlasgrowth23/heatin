@@ -139,28 +139,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/customers", async (req: any, res) => {
     try {
-      // Get user from session
       const userId = (req.session as any)?.userId;
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
       
-      // Hardcode company ID for now based on user ID
-      let companyId = 7; // Default to ABC HVAC Services
+      // Get company ID based on user
+      let companyId = 7; // ABC HVAC Services
       if (userId === 56) companyId = 8; // XYZ Climate Solutions
       
-      // Insert customer directly using raw SQL to bypass all validation
-      const result = await db.execute(`
+      // Use direct SQL to avoid parameter binding issues
+      const result = await pool.query(`
         INSERT INTO customers (company_id, name, email, phone, address, created_at)
         VALUES ($1, $2, $3, $4, $5, NOW())
         RETURNING *
       `, [companyId, req.body.name, req.body.email, req.body.phone, req.body.address]);
       
       const customer = result.rows[0];
+      
       res.status(201).json(customer);
     } catch (error) {
       console.error('Customer creation error:', error);
-      res.status(400).json({ message: "Failed to create customer", error: String(error) });
+      res.status(500).json({ message: "Failed to create customer", error: String(error) });
     }
   });
 
